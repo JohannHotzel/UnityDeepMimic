@@ -203,6 +203,7 @@ public class DeepMimicAgent : Agent
         int i = -1;
         var bp = jd.bodyPartsDict;
 
+
         bp[chest].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
         bp[spine].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
 
@@ -219,6 +220,7 @@ public class DeepMimicAgent : Agent
         bp[forearmR].SetJointTargetRotation(continuousActions[++i], 0, 0);
         bp[head].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], 0);
 
+        PublishArticulationTransforms();
 
         var refFeatures = referenceSampler.SampleAndExtract(phase, out Vector3 refComLocal);
 
@@ -233,6 +235,22 @@ public class DeepMimicAgent : Agent
         phase += Time.fixedDeltaTime * phaseSpeed;
         if (phase >= 1f) phase -= 1f;
 
+
+
+    }
+
+    private void PublishArticulationTransforms()
+    {
+        if (hips == null)
+            return;
+
+        var links = hips.GetComponentsInChildren<ArticulationBody>();
+        Array.Sort(links, (a, b) => a.index.CompareTo(b.index));
+
+        foreach (var ab in links)
+        {
+            ab.PublishTransform();
+        }
     }
 
     private float ComputeTrackingReward(List<ReferenceMotionSampler.BoneFeatures> refFeatures, Vector3 refComLocal)
@@ -303,7 +321,8 @@ public class DeepMimicAgent : Agent
         const float w_p = 0.65f;
         const float w_v = 0.10f;
         const float w_e = 0.15f;
-        const float w_c = 0.10f;
+        //const float w_c = 0.10f;
+        const float w_c = 0.0f;
 
         float imitationReward =
             w_p * rPose +

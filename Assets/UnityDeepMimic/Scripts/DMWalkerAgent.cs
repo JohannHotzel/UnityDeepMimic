@@ -50,8 +50,8 @@ public class DeepMimicAgent : Agent
     protected override void Awake()
     {
         base.Awake();
-        Time.fixedDeltaTime = 1f / 60f;   // Decision Frequency = 2 to achive 30 Hz 
-        Debug.Log($"Fixed Timestep to: {Time.fixedDeltaTime}");
+        //Time.fixedDeltaTime = 1f / 60f;   // Decision Frequency = 2 to achive 30 Hz 
+       // Debug.Log($"Fixed Timestep to: {Time.fixedDeltaTime}");
     }
 
     public override void Initialize()
@@ -85,7 +85,6 @@ public class DeepMimicAgent : Agent
             }
         }
     }
-
     public override void OnEpisodeBegin()
     {
         foreach (var bp in jd.bodyPartsList)
@@ -93,11 +92,10 @@ public class DeepMimicAgent : Agent
 
         hips.rotation = Quaternion.Euler(0, Random.Range(0.0f, 360.0f), 0);
 
-        phase = UnityEngine.Random.Range(0f, 1f);
+        phase = Random.Range(0f, 1f);
 
         InitializeToReferencePose(phase, true);
     }
-
     private void InitializeToReferencePose(float phase, bool setVelocities)
     {
         var refFeatures = referenceSampler.SampleAndExtract(phase, out Vector3 com);
@@ -181,7 +179,6 @@ public class DeepMimicAgent : Agent
         }
 
     }
-
     public override void OnActionReceived(ActionBuffers actions)
     {
         
@@ -220,6 +217,11 @@ public class DeepMimicAgent : Agent
         if (phase >= 1f) phase -= 1f;
 
     }
+    public override void Heuristic(in ActionBuffers actionsOut)
+    {
+
+    }
+
 
     private float ComputeTrackingReward(List<ReferenceMotionSampler.BoneFeatures> refFeatures, Vector3 refComLocal)
     {
@@ -328,7 +330,6 @@ public class DeepMimicAgent : Agent
 
         return rG;
     }
-
 
     private Vector3 ComputeAgentCenterOfMassLocal()
     {

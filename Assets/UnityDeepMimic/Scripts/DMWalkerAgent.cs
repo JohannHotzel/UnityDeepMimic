@@ -144,11 +144,30 @@ public class DeepMimicAgent : Agent
 
     public override void CollectObservations(VectorSensor sensor)
     {
+        PublishArticulationTransforms();
+
         Transform root = hips;
         Quaternion rootRot = root.rotation;
 
         foreach (var bp in jd.bodyPartsList)
         {
+            Vector3 pos = bp.joint.transform.position;
+            Quaternion rot = bp.joint.transform.rotation;
+            Vector3 lin = bp.joint.linearVelocity;
+            Vector3 ang = bp.joint.angularVelocity;
+
+            if (HasNaN(pos) || HasNaN(rot) || HasNaN(lin) || HasNaN(ang))
+            {
+                Debug.LogError(
+                    $"NaN/Inf detected in bodypart {bp.joint.name}: " +
+                    $"pos={pos}, rot={rot}, linVel={lin}, angVel={ang}"
+                );
+                // Episode sofort beenden, bevor ML-Agents NaNs sieht
+                EndEpisode();
+                return;
+            }
+
+
             Vector3 relPos = root.InverseTransformPoint(bp.joint.transform.position); 
             sensor.AddObservation(relPos);
 
@@ -196,6 +215,14 @@ public class DeepMimicAgent : Agent
 
     }
 
+    private bool HasNaN(Vector3 v) =>
+    float.IsNaN(v.x) || float.IsNaN(v.y) || float.IsNaN(v.z) ||
+    float.IsInfinity(v.x) || float.IsInfinity(v.y) || float.IsInfinity(v.z);
+
+    private bool HasNaN(Quaternion q) =>
+        float.IsNaN(q.x) || float.IsNaN(q.y) || float.IsNaN(q.z) || float.IsNaN(q.w) ||
+        float.IsInfinity(q.x) || float.IsInfinity(q.y) || float.IsInfinity(q.z) || float.IsInfinity(q.w);
+
     public override void OnActionReceived(ActionBuffers actions)
     {
         
@@ -203,7 +230,7 @@ public class DeepMimicAgent : Agent
         int i = -1;
         var bp = jd.bodyPartsDict;
 
-
+        
         bp[chest].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
         bp[spine].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
 
@@ -219,6 +246,25 @@ public class DeepMimicAgent : Agent
         bp[forearmL].SetJointTargetRotation(continuousActions[++i], 0, 0);
         bp[forearmR].SetJointTargetRotation(continuousActions[++i], 0, 0);
         bp[head].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], 0);
+        
+
+        /*
+        bp[chest].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
+        bp[spine].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
+
+        bp[thighL].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
+        bp[thighR].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
+        bp[shinL].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
+        bp[shinR].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
+        bp[footR].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
+        bp[footL].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
+
+        bp[armL].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
+        bp[armR].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
+        bp[forearmL].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
+        bp[forearmR].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
+        bp[head].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
+        */
 
         PublishArticulationTransforms();
 
@@ -321,8 +367,8 @@ public class DeepMimicAgent : Agent
         const float w_p = 0.65f;
         const float w_v = 0.10f;
         const float w_e = 0.15f;
-        //const float w_c = 0.10f;
-        const float w_c = 0.0f;
+        const float w_c = 0.10f;
+        //const float w_c = 0.0f;
 
         float imitationReward =
             w_p * rPose +

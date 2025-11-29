@@ -93,7 +93,7 @@ public class ReferenceJointDebugger : MonoBehaviour
     private void ApplyWorldRotationToJoint(ConfigurableJoint joint, Quaternion targetWorldRotation, Quaternion startLocalRotation)
     {
         Quaternion targetLocalRotation = Quaternion.Inverse(joint.transform.parent.rotation) * targetWorldRotation;
-        joint.SetTargetRotationLocal(targetLocalRotation, startLocalRotation);
+     //   joint.SetTargetRotationLocal(targetLocalRotation, startLocalRotation);
     }
 }
 

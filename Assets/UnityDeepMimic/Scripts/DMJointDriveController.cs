@@ -8,18 +8,19 @@ public class DMBodyPart
 {
     [Header("Body Part Info")]
     [Space(10)]
-    public ArticulationBody joint;
-    public Vector3 startingPos;
-    public Quaternion startingRot;
-    public Quaternion startingLocalRot;
+    public ConfigurableJoint joint;
+    public Rigidbody rb;
+    [HideInInspector] public Vector3 startingPos;
+    [HideInInspector] public Quaternion startingRot;
+    [HideInInspector] public Quaternion startingLocalRot;
 
     [Header("Ground & Target Contact")]
     [Space(10)]
     public GroundContact groundContact;
     public TargetContact targetContact;
 
+    [FormerlySerializedAs("thisJDController")]
     [HideInInspector] public DMJointDriveController thisJdController;
-
 
     [Header("Current Joint Settings")]
     [Space(10)]
@@ -39,19 +40,14 @@ public class DMBodyPart
     public AnimationCurve jointForceCurve = new AnimationCurve();
     public AnimationCurve jointTorqueCurve = new AnimationCurve();
 
-    /// <summary>
-    /// Reset body part to initial configuration.
-    /// </summary>
+
     public void Reset()
     {
-        var t = joint.transform;
-
-        t.position = startingPos;
-        t.rotation = startingRot;
-        t.localRotation = startingLocalRot;
-
-        joint.linearVelocity = Vector3.zero;
-        joint.angularVelocity = Vector3.zero;
+        rb.transform.position = startingPos;
+        rb.transform.rotation = startingRot;
+        rb.transform.localRotation = startingLocalRot;
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
 
         if (groundContact) groundContact.touchingGround = false;
         if (targetContact) targetContact.touchingTarget = false;
@@ -60,109 +56,87 @@ public class DMBodyPart
 
     public void SetJointTargetRotation(float x, float y, float z)
     {
-        if (joint == null)
+        if (joint == null || thisJdController == null || thisJdController.root == null)
             return;
 
-        switch (joint.jointType)
+        // Actions [-1,1] -> [0,1]
+        x = (x + 1f) * 0.5f;
+        y = (y + 1f) * 0.5f;
+        z = (z + 1f) * 0.5f;
+
+        // [0,1] -> [-180,180] (Rootspace-Winkel)
+        float xDeg = Mathf.Lerp(-180f, 180f, x);
+        float yDeg = Mathf.Lerp(-180f, 180f, y);
+        float zDeg = Mathf.Lerp(-180f, 180f, z);
+
+        Quaternion targetRootSpaceRot = Quaternion.Euler(xDeg, yDeg, zDeg);
+
+        Quaternion targetWorldRotation = thisJdController.root.rotation * targetRootSpaceRot;
+
+        Transform parent = joint.transform.parent;
+
+        Quaternion targetLocalRotation = Quaternion.Inverse(parent.rotation) * targetWorldRotation;
+        joint.SetTargetRotationLocal(targetLocalRotation, startingLocalRot);
+
+        currentXNormalizedRot = Mathf.InverseLerp(-180f, 180f, xDeg);
+        currentYNormalizedRot = Mathf.InverseLerp(-180f, 180f, yDeg);
+        currentZNormalizedRot = Mathf.InverseLerp(-180f, 180f, zDeg);
+
+        currentEularJointRotation = new Vector3(xDeg, yDeg, zDeg);
+    }
+
+
+    public void SetJointTargetRotationLocal(float x, float y, float z)
+    {
+        x = (x + 1f) * 0.5f;
+        y = (y + 1f) * 0.5f;
+        z = (z + 1f) * 0.5f;
+
+        var xRot = Mathf.Lerp(joint.lowAngularXLimit.limit, joint.highAngularXLimit.limit, x);
+        var yRot = Mathf.Lerp(-joint.angularYLimit.limit, joint.angularYLimit.limit, y);
+        var zRot = Mathf.Lerp(-joint.angularZLimit.limit, joint.angularZLimit.limit, z);
+
+        currentXNormalizedRot = Mathf.InverseLerp(joint.lowAngularXLimit.limit, joint.highAngularXLimit.limit, xRot);
+        currentYNormalizedRot = Mathf.InverseLerp(-joint.angularYLimit.limit, joint.angularYLimit.limit, yRot);
+        currentZNormalizedRot = Mathf.InverseLerp(-joint.angularZLimit.limit, joint.angularZLimit.limit, zRot);
+
+        joint.targetRotation = Quaternion.Euler(xRot, yRot, zRot);
+        currentEularJointRotation = new Vector3(xRot, yRot, zRot);
+    }
+    public void SetJointTargetRotation(Quaternion rootSpaceRotation)
+    {
+        if (joint == null || thisJdController == null || thisJdController.root == null)
+            return;
+
+        Quaternion targetWorldRotation = thisJdController.root.rotation * rootSpaceRotation;
+        Quaternion targetLocalRotation = Quaternion.Inverse(joint.transform.parent.rotation) * targetWorldRotation;
+        joint.SetTargetRotationLocal(targetLocalRotation, startingLocalRot);
+    }
+
+
+    public void SetJointStrength(float strength)
+    {
+        var rawVal = (strength + 1f) * 0.5f * thisJdController.maxJointForceLimit;
+        var jd = new JointDrive
         {
-            case ArticulationJointType.RevoluteJoint:
-                {
-                    var drive = joint.xDrive;
-
-                    if (Mathf.Approximately(drive.lowerLimit, drive.upperLimit))
-                        return;
-
-                   
-                    float t01 = (x + 1f) * 0.5f;
-          
-                    float target = Mathf.Lerp(drive.lowerLimit, drive.upperLimit, t01);
-
-                    drive.target = target;
-                    joint.xDrive = drive;
-
-                    currentXNormalizedRot = Mathf.InverseLerp(drive.lowerLimit, drive.upperLimit, target);
-                    currentEularJointRotation = new Vector3(target, 0f, 0f);
-                    break;
-                }
-
-case ArticulationJointType.SphericalJoint:
-{
-    // Twist (X)
-    var xDrive = joint.xDrive;
-    if (!Mathf.Approximately(xDrive.lowerLimit, xDrive.upperLimit))
-    {
-        float t = (x + 1f) * 0.5f;
-        float target = Mathf.Lerp(xDrive.lowerLimit, xDrive.upperLimit, t);
-        xDrive.target = target;
-        joint.xDrive = xDrive;
-
-        currentXNormalizedRot = Mathf.InverseLerp(xDrive.lowerLimit, xDrive.upperLimit, target);
-        currentEularJointRotation.x = target;
+            positionSpring = thisJdController.maxJointSpring,
+            positionDamper = thisJdController.jointDampen,
+            maximumForce = rawVal
+        };
+        joint.slerpDrive = jd;
+        currentStrength = jd.maximumForce;
     }
-
-    // Swing Y
-    var yDrive = joint.yDrive;
-    if (!Mathf.Approximately(yDrive.lowerLimit, yDrive.upperLimit))
-    {
-        float t = (y + 1f) * 0.5f;
-        float target = Mathf.Lerp(yDrive.lowerLimit, yDrive.upperLimit, t);
-        yDrive.target = target;
-        joint.yDrive = yDrive;
-
-        currentYNormalizedRot = Mathf.InverseLerp(yDrive.lowerLimit, yDrive.upperLimit, target);
-        currentEularJointRotation.y = target;
-    }
-
-    // Swing Z
-    var zDrive = joint.zDrive;
-    if (!Mathf.Approximately(zDrive.lowerLimit, zDrive.upperLimit))
-    {
-        float t = (z + 1f) * 0.5f;
-        float target = Mathf.Lerp(zDrive.lowerLimit, zDrive.upperLimit, t);
-        zDrive.target = target;
-        joint.zDrive = zDrive;
-
-        currentZNormalizedRot = Mathf.InverseLerp(zDrive.lowerLimit, zDrive.upperLimit, target);
-        currentEularJointRotation.z = target;
-    }
-    break;
-}
-
-            case ArticulationJointType.FixedJoint:
-            default:
-
-                break;
-        }
-    }
-
     public void SetJointStrengthConstant(float strength01)
     {
-        float forceLimit = Mathf.Clamp01(strength01) * thisJdController.maxJointForceLimit;
-
-
-
-        ArticulationDrive xDrive = joint.xDrive;
-        xDrive.driveType = ArticulationDriveType.Force;
-        xDrive.stiffness = thisJdController.maxJointSpring;
-        xDrive.damping = thisJdController.jointDampen;
-        xDrive.forceLimit = forceLimit;
-        joint.xDrive = xDrive;
-
-        ArticulationDrive yDrive = joint.yDrive;
-        yDrive.driveType = ArticulationDriveType.Force;
-        yDrive.stiffness = thisJdController.maxJointSpring;
-        yDrive.damping = thisJdController.jointDampen;
-        yDrive.forceLimit = forceLimit;
-        joint.yDrive = yDrive;
-
-        ArticulationDrive zDrive = joint.zDrive;
-        zDrive.driveType = ArticulationDriveType.Force;
-        zDrive.stiffness = thisJdController.maxJointSpring;
-        zDrive.damping = thisJdController.jointDampen;
-        zDrive.forceLimit = forceLimit;
-        joint.zDrive = zDrive;
-
-        currentStrength = forceLimit;
+        var rawVal = Mathf.Clamp01(strength01) * thisJdController.maxJointForceLimit;
+        var jd = new JointDrive
+        {
+            positionSpring = thisJdController.maxJointSpring,
+            positionDamper = thisJdController.jointDampen,
+            maximumForce = rawVal
+        };
+        joint.slerpDrive = jd;
+        currentStrength = jd.maximumForce;
     }
 
 }
@@ -174,77 +148,145 @@ public class DMJointDriveController : MonoBehaviour
     [Header("Joint Drive Settings")]
     [Space(10)]
     public Transform root;
-    public float maxJointSpring = 1000f;
-    public float jointDampen = 50f;
-    public float maxJointForceLimit = 500f;
+    public float maxJointSpring;
+    public float jointDampen;
+    public float maxJointForceLimit;
 
-    [HideInInspector] public Dictionary<Transform, DMBodyPart> bodyPartsDict = new();
-    [HideInInspector] public List<DMBodyPart> bodyPartsList = new();
+    [HideInInspector] public Dictionary<Transform, DMBodyPart> bodyPartsDict = new Dictionary<Transform, DMBodyPart>();
 
+    [HideInInspector] public List<DMBodyPart> bodyPartsList = new List<DMBodyPart>();
     const float k_MaxAngularVelocity = 50.0f;
-
 
 
     public void SetupBodyPart(Transform t)
     {
-        var ab = t.GetComponent<ArticulationBody>();
-        if (ab == null)
-        {
-            Debug.LogError($"No ArticulationBody found on {t.name}. Please add one.");
-            return;
-        }
-
         var bp = new DMBodyPart
         {
-            joint = ab,
+            rb = t.GetComponent<Rigidbody>(),
+            joint = t.GetComponent<ConfigurableJoint>(),
             startingPos = t.position,
             startingRot = t.rotation,
-            startingLocalRot = t.localRotation,
-            thisJdController = this
+            startingLocalRot = t.localRotation
         };
+        bp.rb.maxAngularVelocity = k_MaxAngularVelocity;
 
-        ab.maxAngularVelocity = k_MaxAngularVelocity;
-
-
+        // Add & setup the ground contact script
         bp.groundContact = t.GetComponent<GroundContact>();
         if (!bp.groundContact)
         {
             bp.groundContact = t.gameObject.AddComponent<GroundContact>();
-            bp.groundContact.agent = GetComponent<Agent>();
+            bp.groundContact.agent = gameObject.GetComponent<Agent>();
         }
         else
         {
-            bp.groundContact.agent = GetComponent<Agent>();
+            bp.groundContact.agent = gameObject.GetComponent<Agent>();
         }
 
+        if (bp.joint)
+        {
+            var jd = new JointDrive
+            {
+                positionSpring = maxJointSpring,
+                positionDamper = jointDampen,
+                maximumForce = maxJointForceLimit
+            };
+            bp.joint.slerpDrive = jd;
+        }
 
-        // Drives initialisieren (Force Mode)
-        var xDrive = ab.xDrive;
-        xDrive.driveType = ArticulationDriveType.Force;
-        xDrive.stiffness = maxJointSpring;
-        xDrive.damping = jointDampen;
-        xDrive.forceLimit = maxJointForceLimit;
-        ab.xDrive = xDrive;
-
-        var yDrive = ab.yDrive;
-        yDrive.driveType = ArticulationDriveType.Force;
-        yDrive.stiffness = maxJointSpring;
-        yDrive.damping = jointDampen;
-        yDrive.forceLimit = maxJointForceLimit;
-        ab.yDrive = yDrive;
-
-        var zDrive = ab.zDrive;
-        zDrive.driveType = ArticulationDriveType.Force;
-        zDrive.stiffness = maxJointSpring;
-        zDrive.damping = jointDampen;
-        zDrive.forceLimit = maxJointForceLimit;
-        ab.zDrive = zDrive;
-
+        bp.thisJdController = this;
         bodyPartsDict.Add(t, bp);
         bodyPartsList.Add(bp);
     }
 
+    public void GetCurrentJointForces()
+    {
+        foreach (var bodyPart in bodyPartsDict.Values)
+        {
+            if (bodyPart.joint)
+            {
+                bodyPart.currentJointForce = bodyPart.joint.currentForce;
+                bodyPart.currentJointForceSqrMag = bodyPart.joint.currentForce.magnitude;
+                bodyPart.currentJointTorque = bodyPart.joint.currentTorque;
+                bodyPart.currentJointTorqueSqrMag = bodyPart.joint.currentTorque.magnitude;
+                if (Application.isEditor)
+                {
+                    if (bodyPart.jointForceCurve.length > 1000)
+                    {
+                        bodyPart.jointForceCurve = new AnimationCurve();
+                    }
+
+                    if (bodyPart.jointTorqueCurve.length > 1000)
+                    {
+                        bodyPart.jointTorqueCurve = new AnimationCurve();
+                    }
+
+                    bodyPart.jointForceCurve.AddKey(Time.time, bodyPart.currentJointForceSqrMag);
+                    bodyPart.jointTorqueCurve.AddKey(Time.time, bodyPart.currentJointTorqueSqrMag);
+                }
+            }
+        }
+    }
 }
 
 
 
+
+
+
+public static class ConfigurableJointExtensions
+{
+    /// <summary>
+    /// Sets a joint's targetRotation to match a given local rotation.
+    /// The joint transform's local rotation must be cached on Start and passed into this method.
+    /// </summary>
+    public static void SetTargetRotationLocal(this ConfigurableJoint joint, Quaternion targetLocalRotation, Quaternion startLocalRotation)
+    {
+        if (joint.configuredInWorldSpace)
+        {
+            Debug.LogError("SetTargetRotationLocal should not be used with joints that are configured in world space. For world space joints, use SetTargetRotation.", joint);
+        }
+        SetTargetRotationInternal(joint, targetLocalRotation, startLocalRotation, Space.Self);
+    }
+
+    /// <summary>
+    /// Sets a joint's targetRotation to match a given world rotation.
+    /// The joint transform's world rotation must be cached on Start and passed into this method.
+    /// </summary>
+    public static void SetTargetRotation(this ConfigurableJoint joint, Quaternion targetWorldRotation, Quaternion startWorldRotation)
+    {
+        if (!joint.configuredInWorldSpace)
+        {
+            Debug.LogError("SetTargetRotation must be used with joints that are configured in world space. For local space joints, use SetTargetRotationLocal.", joint);
+        }
+        SetTargetRotationInternal(joint, targetWorldRotation, startWorldRotation, Space.World);
+    }
+
+    static void SetTargetRotationInternal(ConfigurableJoint joint, Quaternion targetRotation, Quaternion startRotation, Space space)
+    {
+        // Calculate the rotation expressed by the joint's axis and secondary axis
+        var right = joint.axis;
+        var forward = Vector3.Cross(joint.axis, joint.secondaryAxis).normalized;
+        var up = Vector3.Cross(forward, right).normalized;
+        Quaternion worldToJointSpace = Quaternion.LookRotation(forward, up);
+
+        // Transform into world space
+        Quaternion resultRotation = Quaternion.Inverse(worldToJointSpace);
+
+        // Counter-rotate and apply the new local rotation.
+        // Joint space is the inverse of world space, so we need to invert our value
+        if (space == Space.World)
+        {
+            resultRotation *= startRotation * Quaternion.Inverse(targetRotation);
+        }
+        else
+        {
+            resultRotation *= Quaternion.Inverse(targetRotation) * startRotation;
+        }
+
+        // Transform back into joint space
+        resultRotation *= worldToJointSpace;
+
+        // Set target rotation to our newly calculated rotation
+        joint.targetRotation = resultRotation;
+    }
+}

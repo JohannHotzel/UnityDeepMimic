@@ -29,10 +29,6 @@ public class DeepMimicAgent : Agent
     [Header("Reference Motion")]
     public ReferenceMotionSampler referenceSampler;
 
-    [Header("Articulation Reset")]
-    public ArticulationBodyHierarchyReset articulationReset;
-
-
     [Header("Phase Settings")]
     public float phaseSpeed = 1f; // cycles per second
     private float phase;
@@ -92,24 +88,18 @@ public class DeepMimicAgent : Agent
 
     public override void OnEpisodeBegin()
     {
-        if (articulationReset != null)
-        {
-            articulationReset.ResetHierarchyToInitial();
-        }
-
         foreach (var bp in jd.bodyPartsList)
-        {
-            if (bp.groundContact) bp.groundContact.touchingGround = false;
-            if (bp.targetContact) bp.targetContact.touchingTarget = false;
-        }
+            bp.Reset();
 
-        phase = Random.Range(0f, 1f);
+        hips.rotation = Quaternion.Euler(0, Random.Range(0.0f, 360.0f), 0);
+
+        phase = UnityEngine.Random.Range(0f, 1f);
+
         InitializeToReferencePose(phase, true);
     }
 
     private void InitializeToReferencePose(float phase, bool setVelocities)
     {
-        /*
         var refFeatures = referenceSampler.SampleAndExtract(phase, out Vector3 com);
         int count = Mathf.Min(jd.bodyPartsList.Count, refFeatures.Count);
 
@@ -121,61 +111,38 @@ public class DeepMimicAgent : Agent
             Vector3 worldPos = hips.TransformPoint(feat.localPos);
             Quaternion worldRot = hips.rotation * feat.localRot;
 
-            // --- CHANGED BLOCK: Rigidbody -> ArticulationBody
-            bp.joint.transform.position = worldPos;          // <<< CHANGED
-            bp.joint.transform.rotation = worldRot;          // <<< CHANGED
+            bp.rb.transform.position = worldPos;
+            bp.rb.transform.rotation = worldRot;
 
             if (setVelocities)
             {
-                bp.joint.velocity = Vector3.zero;            // <<< CHANGED
-                bp.joint.angularVelocity = Vector3.zero;     // <<< CHANGED
+                bp.rb.linearVelocity = Vector3.zero;
+                bp.rb.angularVelocity = Vector3.zero;
             }
-            // --- END CHANGED BLOCK
 
             if (bp.groundContact) bp.groundContact.touchingGround = false;
             if (bp.targetContact) bp.targetContact.touchingTarget = false;
 
             bp.SetJointTargetRotation(feat.localRot);
         }
-        */
-
     }
 
 
     public override void CollectObservations(VectorSensor sensor)
     {
-        PublishArticulationTransforms();
-
         Transform root = hips;
         Quaternion rootRot = root.rotation;
 
         foreach (var bp in jd.bodyPartsList)
         {
-            Vector3 pos = bp.joint.transform.position;
-            Quaternion rot = bp.joint.transform.rotation;
-            Vector3 lin = bp.joint.linearVelocity;
-            Vector3 ang = bp.joint.angularVelocity;
-
-            if (HasNaN(pos) || HasNaN(rot) || HasNaN(lin) || HasNaN(ang))
-            {
-                Debug.LogError(
-                    $"NaN/Inf detected in bodypart {bp.joint.name}: " +
-                    $"pos={pos}, rot={rot}, linVel={lin}, angVel={ang}"
-                );
-                // Episode sofort beenden, bevor ML-Agents NaNs sieht
-                EndEpisode();
-                return;
-            }
-
-
-            Vector3 relPos = root.InverseTransformPoint(bp.joint.transform.position); 
+            Vector3 relPos = root.InverseTransformPoint(bp.rb.position);
             sensor.AddObservation(relPos);
 
-            Quaternion relRot = Quaternion.Inverse(rootRot) * bp.joint.transform.rotation; 
+            Quaternion relRot = Quaternion.Inverse(rootRot) * bp.rb.rotation;
             sensor.AddObservation(relRot);
 
-            Vector3 linVel = root.InverseTransformDirection(bp.joint.linearVelocity);          
-            Vector3 angVel = root.InverseTransformDirection(bp.joint.angularVelocity);   
+            Vector3 linVel = root.InverseTransformDirection(bp.rb.linearVelocity);
+            Vector3 angVel = root.InverseTransformDirection(bp.rb.angularVelocity);
             sensor.AddObservation(linVel);
             sensor.AddObservation(angVel);
         }
@@ -215,14 +182,6 @@ public class DeepMimicAgent : Agent
 
     }
 
-    private bool HasNaN(Vector3 v) =>
-    float.IsNaN(v.x) || float.IsNaN(v.y) || float.IsNaN(v.z) ||
-    float.IsInfinity(v.x) || float.IsInfinity(v.y) || float.IsInfinity(v.z);
-
-    private bool HasNaN(Quaternion q) =>
-        float.IsNaN(q.x) || float.IsNaN(q.y) || float.IsNaN(q.z) || float.IsNaN(q.w) ||
-        float.IsInfinity(q.x) || float.IsInfinity(q.y) || float.IsInfinity(q.z) || float.IsInfinity(q.w);
-
     public override void OnActionReceived(ActionBuffers actions)
     {
         
@@ -230,43 +189,22 @@ public class DeepMimicAgent : Agent
         int i = -1;
         var bp = jd.bodyPartsDict;
 
-        
-        bp[chest].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
-        bp[spine].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
+        bp[chest].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
+        bp[spine].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
 
-        bp[thighL].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], 0);
-        bp[thighR].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], 0);
-        bp[shinL].SetJointTargetRotation(continuousActions[++i], 0, 0);
-        bp[shinR].SetJointTargetRotation(continuousActions[++i], 0, 0);
-        bp[footR].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
-        bp[footL].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
+        bp[thighL].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], 0);
+        bp[thighR].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], 0);
+        bp[shinL].SetJointTargetRotationLocal(continuousActions[++i], 0, 0);
+        bp[shinR].SetJointTargetRotationLocal(continuousActions[++i], 0, 0);
+        bp[footR].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
+        bp[footL].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
 
-        bp[armL].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], 0);
-        bp[armR].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], 0);
-        bp[forearmL].SetJointTargetRotation(continuousActions[++i], 0, 0);
-        bp[forearmR].SetJointTargetRotation(continuousActions[++i], 0, 0);
-        bp[head].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], 0);
-        
+        bp[armL].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], 0);
+        bp[armR].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], 0);
+        bp[forearmL].SetJointTargetRotationLocal(continuousActions[++i], 0, 0);
+        bp[forearmR].SetJointTargetRotationLocal(continuousActions[++i], 0, 0);
+        bp[head].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], 0);
 
-        /*
-        bp[chest].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
-        bp[spine].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
-
-        bp[thighL].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
-        bp[thighR].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
-        bp[shinL].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
-        bp[shinR].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
-        bp[footR].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
-        bp[footL].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
-
-        bp[armL].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
-        bp[armR].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
-        bp[forearmL].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
-        bp[forearmR].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
-        bp[head].SetJointTargetRotation(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
-        */
-
-        PublishArticulationTransforms();
 
         var refFeatures = referenceSampler.SampleAndExtract(phase, out Vector3 refComLocal);
 
@@ -281,22 +219,6 @@ public class DeepMimicAgent : Agent
         phase += Time.fixedDeltaTime * phaseSpeed;
         if (phase >= 1f) phase -= 1f;
 
-
-
-    }
-
-    private void PublishArticulationTransforms()
-    {
-        if (hips == null)
-            return;
-
-        var links = hips.GetComponentsInChildren<ArticulationBody>();
-        Array.Sort(links, (a, b) => a.index.CompareTo(b.index));
-
-        foreach (var ab in links)
-        {
-            ab.PublishTransform();
-        }
     }
 
     private float ComputeTrackingReward(List<ReferenceMotionSampler.BoneFeatures> refFeatures, Vector3 refComLocal)
@@ -324,7 +246,7 @@ public class DeepMimicAgent : Agent
             var f = refFeatures[i];
 
             // Pose: lokale Rotationen im Root-Space
-            Quaternion agentLocalRot = Quaternion.Inverse(rootRot) * bp.joint.transform.rotation;
+            Quaternion agentLocalRot = Quaternion.Inverse(rootRot) * bp.rb.rotation;
             Quaternion refLocalRot = f.localRot;
 
             // Quaternion-Differenz -> Rotationswinkel (in Radiant)
@@ -337,15 +259,15 @@ public class DeepMimicAgent : Agent
             }
 
             // Angular Velocity: in Root-Space vergleichen
-            Vector3 agentAngVelLocal = root.InverseTransformDirection(bp.joint.angularVelocity);
+            Vector3 agentAngVelLocal = root.InverseTransformDirection(bp.rb.angularVelocity);
             Vector3 velDiff = f.angVel - agentAngVelLocal;
             sumVelSq += velDiff.sqrMagnitude;
 
             // --- End-Effektor-Term (Hände & Füße) ---
-            if (IsEndEffector(bp.joint.transform))
+            if (IsEndEffector(bp.rb.transform))
             {
                 Vector3 refWorldPos = root.TransformPoint(f.localPos);
-                Vector3 diff = refWorldPos - bp.joint.transform.position;
+                Vector3 diff = refWorldPos - bp.rb.position;
                 sumEndSq += diff.sqrMagnitude;
             }
         }
@@ -368,7 +290,6 @@ public class DeepMimicAgent : Agent
         const float w_v = 0.10f;
         const float w_e = 0.15f;
         const float w_c = 0.10f;
-        //const float w_c = 0.0f;
 
         float imitationReward =
             w_p * rPose +
@@ -394,7 +315,7 @@ public class DeepMimicAgent : Agent
         Vector3 dStar = toTarget.normalized; 
 
         var hipsBP = jd.bodyPartsDict[hips];
-        Vector3 v = hipsBP.joint.linearVelocity;
+        Vector3 v = hipsBP.rb.linearVelocity;
         v.y = 0f;
 
         float vParallel = Vector3.Dot(v, dStar);
@@ -419,11 +340,11 @@ public class DeepMimicAgent : Agent
             var bp = jd.bodyPartsList[i];
             float m = 1f; // Default
 
-            if (bp.joint)
-                m = bp.joint.mass;
+            if (bp.rb)
+                m = bp.rb.mass;
 
             totalMass += m;
-            accum += bp.joint.transform.position * m; 
+            accum += bp.rb.transform.position * m;
         }
 
         if (totalMass <= 0f)

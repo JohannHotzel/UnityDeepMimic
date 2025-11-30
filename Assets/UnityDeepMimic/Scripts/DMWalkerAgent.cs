@@ -29,6 +29,15 @@ public class DeepMimicAgent : Agent
     [Header("Reference Motion")]
     public ReferenceMotionSampler referenceSampler;
 
+    [Header("End Effector Targets and Com (Debug Spheres)")]
+    public Transform leftHandEndEffector; 
+    public Transform rightHandEndEffector;  
+    public Transform leftFootEndEffector;  
+    public Transform rightFootEndEffector;
+    public Transform comTarget;   
+    public Transform comRagdoll;
+
+
     [Header("Phase Settings")]
     public float phaseSpeed = 1f; // cycles per second
     private float phase;
@@ -50,8 +59,8 @@ public class DeepMimicAgent : Agent
     protected override void Awake()
     {
         base.Awake();
-        //Time.fixedDeltaTime = 1f / 60f;   // Decision Frequency = 2 to achive 30 Hz 
-       // Debug.Log($"Fixed Timestep to: {Time.fixedDeltaTime}");
+        Time.fixedDeltaTime = 1f / 60f;   // Decision Frequency = 2 to achive 30 Hz 
+        Debug.Log($"Fixed Timestep to: {Time.fixedDeltaTime}");
     }
 
     public override void Initialize()
@@ -123,6 +132,9 @@ public class DeepMimicAgent : Agent
 
             bp.SetJointTargetRotation(feat.localRot);
         }
+
+        UpdateEndEffectorTargetsDebug(refFeatures);
+        UpdateCenterOfMassDebug(com);
     }
 
     public override void CollectObservations(VectorSensor sensor)
@@ -203,6 +215,9 @@ public class DeepMimicAgent : Agent
 
 
         var refFeatures = referenceSampler.SampleAndExtract(phase, out Vector3 refComLocal);
+
+        UpdateEndEffectorTargetsDebug(refFeatures);
+        UpdateCenterOfMassDebug(refComLocal);
 
         float imitationReward = ComputeTrackingReward(refFeatures, refComLocal);
         float taskReward = ComputeTargetHeadingReward();
@@ -352,4 +367,66 @@ public class DeepMimicAgent : Agent
         Vector3 comWorld = accum / totalMass;
         return hips.InverseTransformPoint(comWorld);
     }
+
+
+
+    //--------------------------------------------------------------------------------------------------------------
+    // Debug: Update End-Effector Targets and COM Spheres
+    //--------------------------------------------------------------------------------------------------------------
+    private void UpdateEndEffectorTargetsDebug(List<ReferenceMotionSampler.BoneFeatures> refFeatures)
+    {
+        if (leftHandEndEffector == null && rightHandEndEffector == null &&
+            leftFootEndEffector == null && rightFootEndEffector == null)
+        {
+            return;
+        }
+
+        Transform root = hips;
+        int count = Mathf.Min(refFeatures.Count, jd.bodyPartsList.Count);
+
+        for (int i = 0; i < count; i++)
+        {
+            var bp = jd.bodyPartsList[i];
+            if (!IsEndEffector(bp.rb.transform))
+                continue;
+
+            var f = refFeatures[i];
+            Vector3 refWorldPos = root.TransformPoint(f.localPos);
+
+            if (bp.rb.transform == handL && leftHandEndEffector != null)
+            {
+                leftHandEndEffector.position = refWorldPos;
+            }
+            else if (bp.rb.transform == handR && rightHandEndEffector != null)
+            {
+                rightHandEndEffector.position = refWorldPos;
+            }
+            else if (bp.rb.transform == footL && leftFootEndEffector != null)
+            {
+                leftFootEndEffector.position = refWorldPos;
+            }
+            else if (bp.rb.transform == footR && rightFootEndEffector != null)
+            {
+                rightFootEndEffector.position = refWorldPos;
+            }
+        }
+    }
+    private void UpdateCenterOfMassDebug(Vector3 refComLocal)
+    {
+        if (comTarget == null || comRagdoll == null)
+        {
+            return;
+        }
+
+        Transform root = hips;
+
+        Vector3 refComWorld = root.TransformPoint(refComLocal);
+        comTarget.position = refComWorld;
+
+        Vector3 ragdollComLocal = ComputeAgentCenterOfMassLocal();
+        Vector3 ragdollComWorld = root.TransformPoint(ragdollComLocal);
+        comRagdoll.position = ragdollComWorld;
+    }
+
+
 }

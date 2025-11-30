@@ -37,6 +37,11 @@ public class DeepMimicAgent : Agent
     public Transform comTarget;   
     public Transform comRagdoll;
 
+    [Header("Action Smoothing")]
+    [Range(0f, 1f)]
+    public float actionSmoothing = 0.2f; 
+    private float[] smoothedActions;
+
 
     [Header("Phase Settings")]
     public float phaseSpeed = 1f; // cycles per second
@@ -103,9 +108,10 @@ public class DeepMimicAgent : Agent
         foreach (var bp in jd.bodyPartsList)
             bp.Reset();
 
-        hips.rotation = Quaternion.Euler(0, Random.Range(0.0f, 360.0f), 0);
+        //hips.rotation = Quaternion.Euler(0, Random.Range(0.0f, 360.0f), 0);
 
-        phase = Random.Range(0f, 1f);
+       // phase = Random.Range(0f, 1f);
+        phase = 0f;
 
         InitializeToReferencePose(phase, true);
     }
@@ -120,8 +126,8 @@ public class DeepMimicAgent : Agent
         if (phasePrev < 0f)
             phasePrev += 1f;
 
-       // var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, dtSim, out Vector3 com);
-        var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, 0f, out Vector3 com);
+        var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, dtSim, out Vector3 com);
+        //var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, 0f, out Vector3 com);
         
         int count = Mathf.Min(jd.bodyPartsList.Count, refFeatures.Count);
 
@@ -206,27 +212,49 @@ public class DeepMimicAgent : Agent
     }
     public override void OnActionReceived(ActionBuffers actions)
     {
-        
+
         var continuousActions = actions.ContinuousActions;
+
+        // --- Initialize smoothing buffer once or if size changed ---
+        if (smoothedActions == null || smoothedActions.Length != continuousActions.Length)
+        {
+            smoothedActions = new float[continuousActions.Length];
+            for (int k = 0; k < continuousActions.Length; k++)
+            {
+                smoothedActions[k] = continuousActions[k]; // start without a jump
+            }
+        }
+
+        // --- Apply simple exponential smoothing: smoothed = lerp(old, new, alpha) ---
+        float alpha = actionSmoothing; // 0..1
+        for (int k = 0; k < continuousActions.Length; k++)
+        {
+            float raw = continuousActions[k];
+            float prev = smoothedActions[k];
+            float s = Mathf.Lerp(prev, raw, alpha);
+
+            smoothedActions[k] = s;
+        }
+
+        // AB HIER: statt continuousActions[...] -> smoothedActions[...] benutzen
         int i = -1;
         var bp = jd.bodyPartsDict;
 
-        // --------- Set Joint Target Rotations from Actions -----------------------------
-        bp[chest].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
-        bp[spine].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
+        bp[chest].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
+        bp[spine].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
 
-        bp[thighL].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], 0);
-        bp[thighR].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], 0);
-        bp[shinL].SetJointTargetRotationLocal(continuousActions[++i], 0, 0);
-        bp[shinR].SetJointTargetRotationLocal(continuousActions[++i], 0, 0);
-        bp[footR].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
-        bp[footL].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
+        bp[thighL].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
+        bp[thighR].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
+        bp[shinL].SetJointTargetRotationLocal(smoothedActions[++i], 0, 0);
+        bp[shinR].SetJointTargetRotationLocal(smoothedActions[++i], 0, 0);
+        bp[footR].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
+        bp[footL].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
 
-        bp[armL].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], 0);
-        bp[armR].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], 0);
-        bp[forearmL].SetJointTargetRotationLocal(continuousActions[++i], 0, 0);
-        bp[forearmR].SetJointTargetRotationLocal(continuousActions[++i], 0, 0);
-        bp[head].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], 0);
+        bp[armL].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
+        bp[armR].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
+        bp[forearmL].SetJointTargetRotationLocal(smoothedActions[++i], 0, 0);
+        bp[forearmR].SetJointTargetRotationLocal(smoothedActions[++i], 0, 0);
+        bp[head].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
 
 
 
@@ -239,8 +267,8 @@ public class DeepMimicAgent : Agent
         if (phasePrev < 0f)
             phasePrev += 1f;
 
-        //var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, dtSim, out Vector3 refComLocal);
-        var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, 0f, out Vector3 refComLocal);
+        var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, dtSim, out Vector3 refComLocal);
+        //var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, 0f, out Vector3 refComLocal);
 
         UpdateEndEffectorTargetsDebug(refFeatures);
         UpdateCenterOfMassDebug(refComLocal);

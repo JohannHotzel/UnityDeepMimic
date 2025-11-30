@@ -125,7 +125,6 @@ public class DeepMimicAgent : Agent
         }
     }
 
-
     public override void CollectObservations(VectorSensor sensor)
     {
         Transform root = hips;
@@ -221,7 +220,6 @@ public class DeepMimicAgent : Agent
     {
 
     }
-
 
     private float ComputeTrackingReward(List<ReferenceMotionSampler.BoneFeatures> refFeatures, Vector3 refComLocal)
     {

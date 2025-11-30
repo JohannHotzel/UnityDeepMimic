@@ -52,40 +52,7 @@ public class DMBodyPart
         if (groundContact) groundContact.touchingGround = false;
         if (targetContact) targetContact.touchingTarget = false;
     }
-
-
-    public void SetJointTargetRotation(float x, float y, float z)
-    {
-        if (joint == null || thisJdController == null || thisJdController.root == null)
-            return;
-
-        // Actions [-1,1] -> [0,1]
-        x = (x + 1f) * 0.5f;
-        y = (y + 1f) * 0.5f;
-        z = (z + 1f) * 0.5f;
-
-        // [0,1] -> [-180,180] (Rootspace-Winkel)
-        float xDeg = Mathf.Lerp(-180f, 180f, x);
-        float yDeg = Mathf.Lerp(-180f, 180f, y);
-        float zDeg = Mathf.Lerp(-180f, 180f, z);
-
-        Quaternion targetRootSpaceRot = Quaternion.Euler(xDeg, yDeg, zDeg);
-
-        Quaternion targetWorldRotation = thisJdController.root.rotation * targetRootSpaceRot;
-
-        Transform parent = joint.transform.parent;
-
-        Quaternion targetLocalRotation = Quaternion.Inverse(parent.rotation) * targetWorldRotation;
-        joint.SetTargetRotationLocal(targetLocalRotation, startingLocalRot);
-
-        currentXNormalizedRot = Mathf.InverseLerp(-180f, 180f, xDeg);
-        currentYNormalizedRot = Mathf.InverseLerp(-180f, 180f, yDeg);
-        currentZNormalizedRot = Mathf.InverseLerp(-180f, 180f, zDeg);
-
-        currentEularJointRotation = new Vector3(xDeg, yDeg, zDeg);
-    }
-
-
+    
     public void SetJointTargetRotationLocal(float x, float y, float z)
     {
         x = (x + 1f) * 0.5f;
@@ -103,6 +70,7 @@ public class DMBodyPart
         joint.targetRotation = Quaternion.Euler(xRot, yRot, zRot);
         currentEularJointRotation = new Vector3(xRot, yRot, zRot);
     }
+    
     public void SetJointTargetRotation(Quaternion rootSpaceRotation)
     {
         if (joint == null || thisJdController == null || thisJdController.root == null)
@@ -126,6 +94,7 @@ public class DMBodyPart
         joint.slerpDrive = jd;
         currentStrength = jd.maximumForce;
     }
+    
     public void SetJointStrengthConstant(float strength01)
     {
         var rawVal = Mathf.Clamp01(strength01) * thisJdController.maxJointForceLimit;
@@ -143,6 +112,7 @@ public class DMBodyPart
 
 
 
+
 public class DMJointDriveController : MonoBehaviour
 {
     [Header("Joint Drive Settings")]
@@ -156,7 +126,6 @@ public class DMJointDriveController : MonoBehaviour
 
     [HideInInspector] public List<DMBodyPart> bodyPartsList = new List<DMBodyPart>();
     const float k_MaxAngularVelocity = 50.0f;
-
 
     public void SetupBodyPart(Transform t)
     {
@@ -197,7 +166,7 @@ public class DMJointDriveController : MonoBehaviour
         bodyPartsDict.Add(t, bp);
         bodyPartsList.Add(bp);
     }
-
+    
     public void GetCurrentJointForces()
     {
         foreach (var bodyPart in bodyPartsDict.Values)
@@ -231,14 +200,8 @@ public class DMJointDriveController : MonoBehaviour
 
 
 
-
-
 public static class ConfigurableJointExtensions
 {
-    /// <summary>
-    /// Sets a joint's targetRotation to match a given local rotation.
-    /// The joint transform's local rotation must be cached on Start and passed into this method.
-    /// </summary>
     public static void SetTargetRotationLocal(this ConfigurableJoint joint, Quaternion targetLocalRotation, Quaternion startLocalRotation)
     {
         if (joint.configuredInWorldSpace)
@@ -247,11 +210,7 @@ public static class ConfigurableJointExtensions
         }
         SetTargetRotationInternal(joint, targetLocalRotation, startLocalRotation, Space.Self);
     }
-
-    /// <summary>
-    /// Sets a joint's targetRotation to match a given world rotation.
-    /// The joint transform's world rotation must be cached on Start and passed into this method.
-    /// </summary>
+    
     public static void SetTargetRotation(this ConfigurableJoint joint, Quaternion targetWorldRotation, Quaternion startWorldRotation)
     {
         if (!joint.configuredInWorldSpace)

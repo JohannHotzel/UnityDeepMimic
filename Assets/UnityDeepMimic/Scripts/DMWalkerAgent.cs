@@ -271,7 +271,7 @@ public class DeepMimicAgent : Agent
     {
         int count = Mathf.Min(refFeatures.Count, jd.bodyPartsList.Count);
 
-        // --- Summen aus dem Paper ---
+        // --- Accumulators for the DeepMimic loss terms ---
         float sumRotSq = 0f; // Σ_j || q̂_j ⊖ q_j ||^2
         float sumVelSq = 0f; // Σ_j || q̇̂_j - q̇_j ||^2
         float sumEndSq = 0f; // Σ_e || p̂_e - p_e ||^2
@@ -280,22 +280,22 @@ public class DeepMimicAgent : Agent
         Transform root = hips;
         Quaternion rootRot = root.rotation;
 
-        // --------- Center of Mass (Agent) ----------
+        // --------- Center of Mass term (agent vs reference) ----------
         Vector3 agentComLocal = ComputeAgentCenterOfMassLocal();
         Vector3 comDiff = refComLocal - agentComLocal;
         comSq = comDiff.sqrMagnitude;
 
-        // --------- Gelenke: Pose + Velocity ----------
+        // --------- Joint rotation + velocity tracking ----------
         for (int i = 0; i < count; i++)
         {
             var bp = jd.bodyPartsList[i];
             var f = refFeatures[i];
 
-            // Pose: lokale Rotationen im Root-Space
+            // Local joint rotations relative to the root
             Quaternion agentLocalRot = Quaternion.Inverse(rootRot) * bp.rb.rotation;
             Quaternion refLocalRot = f.localRot;
 
-            // Quaternion-Differenz -> Rotationswinkel (in Radiant)
+            // Quaternion difference -> rotation angle in radians
             Quaternion delta = refLocalRot * Quaternion.Inverse(agentLocalRot);
             delta.ToAngleAxis(out float angleDeg, out Vector3 axis);
             if (!float.IsNaN(axis.x))
@@ -304,12 +304,12 @@ public class DeepMimicAgent : Agent
                 sumRotSq += angleRad * angleRad;
             }
 
-            // Angular Velocity: in Root-Space vergleichen
+            // Angular velocity difference in root space
             Vector3 agentAngVelLocal = root.InverseTransformDirection(bp.rb.angularVelocity);
             Vector3 velDiff = f.angVel - agentAngVelLocal;
             sumVelSq += velDiff.sqrMagnitude;
 
-            // --- End-Effektor-Term (Hände & Füße) ---
+            // End-effector positional tracking (hands & feet)
             if (IsEndEffector(bp.rb.transform))
             {
                 Vector3 refWorldPos = root.TransformPoint(f.localPos);
@@ -318,7 +318,8 @@ public class DeepMimicAgent : Agent
             }
         }
 
-        // --------- Einzel-Rewards wie im Paper ---------
+        // --------- Individual rewards as defined in the DeepMimic paper ---------
+
         // r_p = exp( -2 * Σ_j ||Δq_j||^2 )
         float rPose = Mathf.Exp(-2f * sumRotSq);
 
@@ -331,11 +332,11 @@ public class DeepMimicAgent : Agent
         // r_c = exp( -10 * ||Δp_c||^2 )
         float rCom = Mathf.Exp(-10f * comSq);
 
-        // --------- Gewichte (Paper) ---------
-        const float w_p = 0.65f;
-        const float w_v = 0.10f;
-        const float w_e = 0.15f;
-        const float w_c = 0.10f;
+        // --------- Weighted combination of all imitation terms ---------
+        const float w_p = 0.65f; // pose
+        const float w_v = 0.10f; // velocity
+        const float w_e = 0.15f; // end-effector
+        const float w_c = 0.10f; // center of mass
 
         float imitationReward =
             w_p * rPose +

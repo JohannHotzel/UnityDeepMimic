@@ -1,0 +1,75 @@
+{
+    "name": "root",
+    "metadata": {
+        "timer_format_version": "0.1.0",
+        "start_time_seconds": "1764511934",
+        "python_version": "3.10.12 | packaged by Anaconda, Inc. | (main, Jul  5 2023, 19:01:18) [MSC v.1916 64 bit (AMD64)]",
+        "command_line_arguments": "C:\\Users\\johan\\miniconda3\\envs\\mlagents\\Scripts\\mlagents-learn config/DMWalker.yaml --env=C:/Users/johan/UnityDeepMimic/Builds/UnityDeepMimic.exe --run-id=DMlkerStill2 --no-graphics-monitor --num-envs=4 --width=1920 --height=1080 --quality-level=1 --resume",
+        "mlagents_version": "1.2.0.dev0",
+        "mlagents_envs_version": "1.2.0.dev0",
+        "communication_protocol_version": "1.5.0",
+        "pytorch_version": "2.2.2+cu121",
+        "numpy_version": "1.23.5",
+        "end_time_seconds": "1764511951"
+    },
+    "total": 17.0073772999458,
+    "count": 1,
+    "self": 10.008341799955815,
+    "children": {
+        "run_training.setup": {
+            "total": 0.23211629991419613,
+            "count": 1,
+            "self": 0.23211629991419613
+        },
+        "TrainerController.start_learning": {
+            "total": 6.76691920007579,
+            "count": 1,
+            "self": 0.00010300031863152981,
+            "children": {
+                "TrainerController._reset_env": {
+                    "total": 5.971868299879134,
+                    "count": 1,
+                    "self": 5.971868299879134
+                },
+                "TrainerController.advance": {
+                    "total": 0.7036103999707848,
+                    "count": 1,
+                    "self": 1.2299977242946625e-05,
+                    "children": {
+                        "env_step": {
+                            "total": 0.7035980999935418,
+                            "count": 1,
+                            "self": 0.5451725998427719,
+                            "children": {
+                                "SubprocessEnvManager._take_step": {
+                                    "total": 0.15842550015076995,
+                                    "count": 4,
+                                    "self": 0.0002445001155138016,
+                                    "children": {
+                                        "TorchPolicy.evaluate": {
+                                            "total": 0.15818100003525615,
+                                            "count": 4,
+                                            "self": 0.15818100003525615
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "TrainerController._save_models": {
+                    "total": 0.09133749990724027,
+                    "count": 1,
+                    "self": 0.00814239983446896,
+                    "children": {
+                        "RLTrainer._checkpoint": {
+                            "total": 0.08319510007277131,
+                            "count": 1,
+                            "self": 0.08319510007277131
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

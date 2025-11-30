@@ -1,0 +1,47 @@
+{
+    "DMWalker": {
+        "checkpoints": [
+            {
+                "steps": 248396,
+                "file_path": "results\\DMlkerStill2\\DMWalker\\DMWalker-248396.onnx",
+                "reward": null,
+                "creation_time": 1764511658.5258205,
+                "auxillary_file_paths": [
+                    "results\\DMlkerStill2\\DMWalker\\DMWalker-248396.pt"
+                ]
+            },
+            {
+                "steps": 351005,
+                "file_path": "results\\DMlkerStill2\\DMWalker\\DMWalker-351005.onnx",
+                "reward": null,
+                "creation_time": 1764511881.7978802,
+                "auxillary_file_paths": [
+                    "results\\DMlkerStill2\\DMWalker\\DMWalker-351005.pt"
+                ]
+            },
+            {
+                "steps": 351005,
+                "file_path": "results\\DMlkerStill2\\DMWalker\\DMWalker-351005.onnx",
+                "reward": null,
+                "creation_time": 1764511941.332395,
+                "auxillary_file_paths": [
+                    "results\\DMlkerStill2\\DMWalker\\DMWalker-351005.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 351005,
+            "file_path": "results\\DMlkerStill2\\DMWalker.onnx",
+            "reward": null,
+            "creation_time": 1764511941.332395,
+            "auxillary_file_paths": [
+                "results\\DMlkerStill2\\DMWalker\\DMWalker-351005.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.2.0.dev0",
+        "torch_version": "2.2.2+cu121"
+    }
+}

@@ -21,7 +21,6 @@ public class ReferenceMotionSampler : MonoBehaviour
     private Vector3 lastComLocal;
 
 
-
     public struct BoneFeatures
     {
         public Vector3 localPos; 
@@ -106,6 +105,79 @@ public class ReferenceMotionSampler : MonoBehaviour
 
         return currentFeatures;
     }
+    public List<BoneFeatures> SampleAndExtractPhases(float phaseNow, float phasePrev, float deltaTime, out Vector3 comLocal)
+    {
+        comLocal = Vector3.zero;
+
+        if (clip == null || animator == null || rootBone == null || bones.Count == 0)
+            return currentFeatures;
+
+        EnsureBuffers();
+
+        float phiPrev = Mathf.Repeat(phasePrev, 1f);
+        float phiNow = Mathf.Repeat(phaseNow, 1f);
+
+        // ------------------------------------------
+        // 1) Sample the pose at the previous phase and store bone transforms
+        // ------------------------------------------
+        SamplePoseAtPhase(phiPrev);
+        for (int i = 0; i < bones.Count; i++)
+        {
+            prevPositions[i] = bones[i].position;
+            prevRotations[i] = bones[i].rotation;
+        }
+
+        // ------------------------------------------
+        // 2) Sample the pose at the current phase
+        // ------------------------------------------
+        SamplePoseAtPhase(phiNow);
+
+        Vector3 comWorld = ComputeCenterOfMassWorld();
+        comLocal = rootBone.InverseTransformPoint(comWorld);
+        lastComLocal = comLocal;
+
+        currentFeatures.Clear();
+
+        bool dtZero = deltaTime == 0f;
+
+        for (int i = 0; i < bones.Count; i++)
+        {
+            Transform bone = bones[i];
+            BoneFeatures f = new BoneFeatures();
+
+            // Local position and rotation relative to the root
+            f.localPos = rootBone.InverseTransformPoint(bone.position);
+            f.localRot = Quaternion.Inverse(rootBone.rotation) * bone.rotation;
+
+            // Previous transforms
+            Vector3 prevPos = prevPositions[i];
+            Quaternion prevRot = prevRotations[i];
+
+            // -----------------------------
+            // 3) If dt == 0 -> pose is static, velocities must be zero
+            // -----------------------------
+            if (dtZero)
+            {
+                f.linVel = Vector3.zero;
+                f.angVel = Vector3.zero;
+            }
+            else
+            {
+                // Compute world-space linear and angular velocities
+                Vector3 worldLinVel = (bone.position - prevPos) / deltaTime;
+                Vector3 worldAngVel = ComputeAngularVelocity(prevRot, bone.rotation, deltaTime);
+
+                // Transform velocities into root space
+                f.linVel = rootBone.InverseTransformDirection(worldLinVel);
+                f.angVel = rootBone.InverseTransformDirection(worldAngVel);
+            }
+
+            currentFeatures.Add(f);
+        }
+
+        return currentFeatures;
+    }
+
 
     private void EnsureBuffers()
     {
@@ -134,7 +206,6 @@ public class ReferenceMotionSampler : MonoBehaviour
         float angleRad = angleDeg * Mathf.Deg2Rad;
         return axis * (angleRad / dt);
     }
-
     private Vector3 ComputeCenterOfMassWorld()
     {
         float totalMass = 0f;
@@ -154,7 +225,6 @@ public class ReferenceMotionSampler : MonoBehaviour
 
         return totalMass > 0f ? accum / totalMass : rootBone.position;
     }
-
 
 
     private void OnDrawGizmos()

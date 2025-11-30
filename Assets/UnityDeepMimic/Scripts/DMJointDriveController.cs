@@ -70,7 +70,6 @@ public class DMBodyPart
         joint.targetRotation = Quaternion.Euler(xRot, yRot, zRot);
         currentEularJointRotation = new Vector3(xRot, yRot, zRot);
     }
-    
     public void SetJointTargetRotation(Quaternion rootSpaceRotation)
     {
         if (joint == null || thisJdController == null || thisJdController.root == null)
@@ -80,8 +79,7 @@ public class DMBodyPart
         Quaternion targetLocalRotation = Quaternion.Inverse(joint.transform.parent.rotation) * targetWorldRotation;
         joint.SetTargetRotationLocal(targetLocalRotation, startingLocalRot);
     }
-
-
+    
     public void SetJointStrength(float strength)
     {
         var rawVal = (strength + 1f) * 0.5f * thisJdController.maxJointForceLimit;
@@ -94,7 +92,6 @@ public class DMBodyPart
         joint.slerpDrive = jd;
         currentStrength = jd.maximumForce;
     }
-    
     public void SetJointStrengthConstant(float strength01)
     {
         var rawVal = Mathf.Clamp01(strength01) * thisJdController.maxJointForceLimit;

@@ -59,10 +59,14 @@ public class DeepMimicAgent : Agent
     protected override void Awake()
     {
         base.Awake();
-        Time.fixedDeltaTime = 1f / 60f;   // Decision Frequency = 2 to achive 30 Hz 
-        Debug.Log($"Fixed Timestep to: {Time.fixedDeltaTime}");
+        //Time.fixedDeltaTime = 1f / 60f;   // Decision Frequency = 2 to achive 30 Hz 
+        //Debug.Log($"Fixed Timestep to: {Time.fixedDeltaTime}");
     }
 
+
+    //--------------------------------------------------------------------------------------------------------------
+    // ML-Agents Methods
+    //--------------------------------------------------------------------------------------------------------------
     public override void Initialize()
     {
         jd = GetComponent<DMJointDriveController>();
@@ -107,7 +111,18 @@ public class DeepMimicAgent : Agent
     }
     private void InitializeToReferencePose(float phase, bool setVelocities)
     {
-        var refFeatures = referenceSampler.SampleAndExtract(phase, out Vector3 com);
+        float dtSim = Time.fixedDeltaTime;
+
+        float phaseNow = phase;
+
+        float deltaPhase = dtSim * phaseSpeed;
+        float phasePrev = phaseNow - deltaPhase;
+        if (phasePrev < 0f)
+            phasePrev += 1f;
+
+       // var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, dtSim, out Vector3 com);
+        var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, 0f, out Vector3 com);
+        
         int count = Mathf.Min(jd.bodyPartsList.Count, refFeatures.Count);
 
         for (int i = 0; i < count; i++)
@@ -136,7 +151,6 @@ public class DeepMimicAgent : Agent
         UpdateEndEffectorTargetsDebug(refFeatures);
         UpdateCenterOfMassDebug(com);
     }
-
     public override void CollectObservations(VectorSensor sensor)
     {
         Transform root = hips;
@@ -197,6 +211,7 @@ public class DeepMimicAgent : Agent
         int i = -1;
         var bp = jd.bodyPartsDict;
 
+        // --------- Set Joint Target Rotations from Actions -----------------------------
         bp[chest].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
         bp[spine].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], continuousActions[++i]);
 
@@ -214,7 +229,18 @@ public class DeepMimicAgent : Agent
         bp[head].SetJointTargetRotationLocal(continuousActions[++i], continuousActions[++i], 0);
 
 
-        var refFeatures = referenceSampler.SampleAndExtract(phase, out Vector3 refComLocal);
+
+        // --------- Sample Reference Features at Current Phase -----------------------------
+        float dtSim = Time.fixedDeltaTime;
+        float deltaPhase = dtSim * phaseSpeed;
+
+        float phaseNow = phase;
+        float phasePrev = phaseNow - deltaPhase;
+        if (phasePrev < 0f)
+            phasePrev += 1f;
+
+        //var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, dtSim, out Vector3 refComLocal);
+        var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, 0f, out Vector3 refComLocal);
 
         UpdateEndEffectorTargetsDebug(refFeatures);
         UpdateCenterOfMassDebug(refComLocal);
@@ -223,12 +249,13 @@ public class DeepMimicAgent : Agent
         float taskReward = ComputeTargetHeadingReward();
 
         float totalReward = imitationWeight * imitationReward + taskWeight * taskReward;
-
         AddReward(totalReward);
 
+        // Phase für den nächsten Schritt fortschreiben
+        phase += deltaPhase;
+        if (phase >= 1f)
+            phase -= 1f;
 
-        phase += Time.fixedDeltaTime * phaseSpeed;
-        if (phase >= 1f) phase -= 1f;
 
     }
     public override void Heuristic(in ActionBuffers actionsOut)
@@ -236,6 +263,10 @@ public class DeepMimicAgent : Agent
 
     }
 
+
+    //--------------------------------------------------------------------------------------------------------------
+    // Reward Computation
+    //--------------------------------------------------------------------------------------------------------------
     private float ComputeTrackingReward(List<ReferenceMotionSampler.BoneFeatures> refFeatures, Vector3 refComLocal)
     {
         int count = Mathf.Min(refFeatures.Count, jd.bodyPartsList.Count);
@@ -314,10 +345,6 @@ public class DeepMimicAgent : Agent
 
         return imitationReward;
     }
-    private bool IsEndEffector(Transform t)
-    {
-        return t == footL || t == footR || t == handL || t == handR;
-    }
     private float ComputeTargetHeadingReward()
     {
         if (target == null)
@@ -327,7 +354,7 @@ public class DeepMimicAgent : Agent
         toTarget.y = 0f;
 
 
-        Vector3 dStar = toTarget.normalized; 
+        Vector3 dStar = toTarget.normalized;
 
         var hipsBP = jd.bodyPartsDict[hips];
         Vector3 v = hipsBP.rb.linearVelocity;
@@ -343,7 +370,10 @@ public class DeepMimicAgent : Agent
 
         return rG;
     }
-
+    private bool IsEndEffector(Transform t)
+    {
+        return t == footL || t == footR || t == handL || t == handR;
+    }
     private Vector3 ComputeAgentCenterOfMassLocal()
     {
         float totalMass = 0f;
@@ -367,7 +397,6 @@ public class DeepMimicAgent : Agent
         Vector3 comWorld = accum / totalMass;
         return hips.InverseTransformPoint(comWorld);
     }
-
 
 
     //--------------------------------------------------------------------------------------------------------------

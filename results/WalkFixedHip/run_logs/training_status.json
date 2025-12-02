@@ -1,0 +1,65 @@
+{
+    "DMWalker": {
+        "checkpoints": [
+            {
+                "steps": 1499996,
+                "file_path": "results\\WalkFixedHip\\DMWalker\\DMWalker-1499996.onnx",
+                "reward": 20.69756844368848,
+                "creation_time": 1764712351.6810236,
+                "auxillary_file_paths": [
+                    "results\\WalkFixedHip\\DMWalker\\DMWalker-1499996.pt"
+                ]
+            },
+            {
+                "steps": 1999932,
+                "file_path": "results\\WalkFixedHip\\DMWalker\\DMWalker-1999932.onnx",
+                "reward": 26.676623009923677,
+                "creation_time": 1764712568.1819773,
+                "auxillary_file_paths": [
+                    "results\\WalkFixedHip\\DMWalker\\DMWalker-1999932.pt"
+                ]
+            },
+            {
+                "steps": 2499968,
+                "file_path": "results\\WalkFixedHip\\DMWalker\\DMWalker-2499968.onnx",
+                "reward": 28.697462546414343,
+                "creation_time": 1764712790.2046568,
+                "auxillary_file_paths": [
+                    "results\\WalkFixedHip\\DMWalker\\DMWalker-2499968.pt"
+                ]
+            },
+            {
+                "steps": 2999941,
+                "file_path": "results\\WalkFixedHip\\DMWalker\\DMWalker-2999941.onnx",
+                "reward": 29.925509023666383,
+                "creation_time": 1764713015.9937162,
+                "auxillary_file_paths": [
+                    "results\\WalkFixedHip\\DMWalker\\DMWalker-2999941.pt"
+                ]
+            },
+            {
+                "steps": 3408129,
+                "file_path": "results\\WalkFixedHip\\DMWalker\\DMWalker-3408129.onnx",
+                "reward": null,
+                "creation_time": 1764713190.4394312,
+                "auxillary_file_paths": [
+                    "results\\WalkFixedHip\\DMWalker\\DMWalker-3408129.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 3408129,
+            "file_path": "results\\WalkFixedHip\\DMWalker.onnx",
+            "reward": null,
+            "creation_time": 1764713190.4394312,
+            "auxillary_file_paths": [
+                "results\\WalkFixedHip\\DMWalker\\DMWalker-3408129.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.2.0.dev0",
+        "torch_version": "2.2.2+cu121"
+    }
+}

@@ -450,6 +450,10 @@ public class DeepMimicAgent : Agent
         return hips.InverseTransformPoint(comWorld);
     }
 
+
+    //--------------------------------------------------------------------------------------------------------------
+    // Delta Time for Decision Intervals
+    //--------------------------------------------------------------------------------------------------------------
     private float GetDecisionDeltaTime()
     {
         int period = 1;

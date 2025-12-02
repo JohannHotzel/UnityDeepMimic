@@ -62,6 +62,7 @@ public class DeepMimicAgent : Agent
     private float phase;
 
     private DMJointDriveController jd;
+    private DecisionRequester decisionRequester;
     DirectionIndicator m_DirectionIndicator;
 
 
@@ -78,7 +79,7 @@ public class DeepMimicAgent : Agent
     protected override void Awake()
     {
         base.Awake();
-        Time.fixedDeltaTime = 1f / 30f;   // Decision Frequency = 2 to achive 30 Hz 
+        Time.fixedDeltaTime = 1f / 60f;  
         Debug.Log($"Fixed Timestep to: {Time.fixedDeltaTime}");
     }
 
@@ -89,6 +90,7 @@ public class DeepMimicAgent : Agent
     public override void Initialize()
     {
         jd = GetComponent<DMJointDriveController>();
+        decisionRequester = GetComponent<DecisionRequester>();
         m_DirectionIndicator = GetComponentInChildren<DirectionIndicator>();
 
         // Setup body parts
@@ -131,17 +133,11 @@ public class DeepMimicAgent : Agent
     }
     private void InitializeToReferencePose(float phase, bool setVelocities)
     {
-        float dtSim = Time.fixedDeltaTime;
-
         float phaseNow = phase;
+        float phasePrev = phaseNow;
 
-        float deltaPhase = dtSim * phaseSpeed;
-        float phasePrev = phaseNow - deltaPhase;
-        if (phasePrev < 0f)
-            phasePrev += 1f;
+        var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, 0f, out Vector3 com);
 
-        var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, dtSim, out Vector3 com);
-        //var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, 0f, out Vector3 com);
         
         int count = Mathf.Min(jd.bodyPartsList.Count, refFeatures.Count);
 
@@ -250,7 +246,6 @@ public class DeepMimicAgent : Agent
             smoothedActions[k] = s;
         }
 
-        // AB HIER: statt continuousActions[...] -> smoothedActions[...] benutzen
         int i = -1;
         var bp = jd.bodyPartsDict;
 
@@ -273,7 +268,7 @@ public class DeepMimicAgent : Agent
 
 
         // --------- Sample Reference Features at Current Phase -----------------------------
-        float dtSim = Time.fixedDeltaTime;
+        float dtSim = GetDecisionDeltaTime(); 
         float deltaPhase = dtSim * phaseSpeed;
 
         float phaseNow = phase;
@@ -282,7 +277,6 @@ public class DeepMimicAgent : Agent
             phasePrev += 1f;
 
         var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, dtSim, out Vector3 refComLocal);
-        //var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, 0f, out Vector3 refComLocal);
 
         UpdateEndEffectorTargetsDebug(refFeatures);
         UpdateCenterOfMassDebug(refComLocal);
@@ -298,8 +292,8 @@ public class DeepMimicAgent : Agent
         if (phase >= 1f)
             phase -= 1f;
 
-
     }
+
     public override void Heuristic(in ActionBuffers actionsOut)
     {
 
@@ -454,6 +448,18 @@ public class DeepMimicAgent : Agent
 
         Vector3 comWorld = accum / totalMass;
         return hips.InverseTransformPoint(comWorld);
+    }
+
+    private float GetDecisionDeltaTime()
+    {
+        int period = 1;
+
+        if (decisionRequester != null && decisionRequester.DecisionPeriod > 0)
+        {
+            period = decisionRequester.DecisionPeriod;
+        }
+
+        return Time.fixedDeltaTime * period;
     }
 
 

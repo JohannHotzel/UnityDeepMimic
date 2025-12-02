@@ -2,58 +2,58 @@
     "DMWalker": {
         "checkpoints": [
             {
-                "steps": 19999979,
-                "file_path": "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-19999979.onnx",
-                "reward": 54.34783370286516,
-                "creation_time": 1764555143.1463797,
+                "steps": 5499957,
+                "file_path": "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-5499957.onnx",
+                "reward": 28.174599170684814,
+                "creation_time": 1764625877.8180962,
                 "auxillary_file_paths": [
-                    "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-19999979.pt"
+                    "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-5499957.pt"
                 ]
             },
             {
-                "steps": 20499946,
-                "file_path": "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-20499946.onnx",
-                "reward": 54.03872958421707,
-                "creation_time": 1764555470.274676,
+                "steps": 5999932,
+                "file_path": "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-5999932.onnx",
+                "reward": 27.264053669842806,
+                "creation_time": 1764626137.8684018,
                 "auxillary_file_paths": [
-                    "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-20499946.pt"
+                    "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-5999932.pt"
                 ]
             },
             {
-                "steps": 20999936,
-                "file_path": "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-20999936.onnx",
-                "reward": 54.42460038512945,
-                "creation_time": 1764555798.0815318,
+                "steps": 6499960,
+                "file_path": "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-6499960.onnx",
+                "reward": 27.42648990566914,
+                "creation_time": 1764626397.5072494,
                 "auxillary_file_paths": [
-                    "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-20999936.pt"
+                    "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-6499960.pt"
                 ]
             },
             {
-                "steps": 21094756,
-                "file_path": "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-21094756.onnx",
-                "reward": 54.40231826570299,
-                "creation_time": 1764555862.2075145,
+                "steps": 6999938,
+                "file_path": "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-6999938.onnx",
+                "reward": 29.81037950515747,
+                "creation_time": 1764626662.1767519,
                 "auxillary_file_paths": [
-                    "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-21094756.pt"
+                    "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-6999938.pt"
                 ]
             },
             {
-                "steps": 21154010,
-                "file_path": "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-21154010.onnx",
-                "reward": null,
-                "creation_time": 1764555932.3923995,
+                "steps": 7238052,
+                "file_path": "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-7238052.onnx",
+                "reward": 28.53476369796797,
+                "creation_time": 1764626775.1102476,
                 "auxillary_file_paths": [
-                    "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-21154010.pt"
+                    "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-7238052.pt"
                 ]
             }
         ],
         "final_checkpoint": {
-            "steps": 21154010,
+            "steps": 7238052,
             "file_path": "results\\DMWalkerSlowWalk\\DMWalker.onnx",
-            "reward": null,
-            "creation_time": 1764555932.3923995,
+            "reward": 28.53476369796797,
+            "creation_time": 1764626775.1102476,
             "auxillary_file_paths": [
-                "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-21154010.pt"
+                "results\\DMWalkerSlowWalk\\DMWalker\\DMWalker-7238052.pt"
             ]
         }
     },

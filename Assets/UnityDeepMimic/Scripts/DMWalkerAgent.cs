@@ -29,6 +29,20 @@ public class DeepMimicAgent : Agent
     [Header("Reference Motion")]
     public ReferenceMotionSampler referenceSampler;
 
+    [Header("Reward Exponents")]
+
+    [Tooltip("Exponent for pose tracking. Default = 2.0 (corresponds to exp(-2 * sumRotSq)).")]
+    public float poseExponent = 2f;
+
+    [Tooltip("Exponent for joint angular velocity tracking. Default = 0.1 (corresponds to exp(-0.1 * sumVelSq)).")]
+    public float velocityExponent = 0.1f;
+
+    [Tooltip("Exponent for end-effector position tracking. Default = 40.0 (corresponds to exp(-40 * sumEndSq)).")]
+    public float endEffectorExponent = 40f;
+
+    [Tooltip("Exponent for center-of-mass tracking. Default = 10.0 (corresponds to exp(-10 * comSq)).")]
+    public float comExponent = 10f;
+
     [Header("End Effector Targets and Com (Debug Spheres)")]
     public Transform leftHandEndEffector; 
     public Transform rightHandEndEffector;  
@@ -64,8 +78,8 @@ public class DeepMimicAgent : Agent
     protected override void Awake()
     {
         base.Awake();
-        //Time.fixedDeltaTime = 1f / 60f;   // Decision Frequency = 2 to achive 30 Hz 
-        //Debug.Log($"Fixed Timestep to: {Time.fixedDeltaTime}");
+        Time.fixedDeltaTime = 1f / 30f;   // Decision Frequency = 2 to achive 30 Hz 
+        Debug.Log($"Fixed Timestep to: {Time.fixedDeltaTime}");
     }
 
 
@@ -349,16 +363,16 @@ public class DeepMimicAgent : Agent
         // --------- Individual rewards as defined in the DeepMimic paper ---------
 
         // r_p = exp( -2 * Σ_j ||Δq_j||^2 )
-        float rPose = Mathf.Exp(-2f * sumRotSq);
+        float rPose = Mathf.Exp(-poseExponent * sumRotSq);
 
         // r_v = exp( -0.1 * Σ_j ||Δω_j||^2 )
-        float rVel = Mathf.Exp(-0.1f * sumVelSq);
+        float rVel = Mathf.Exp(-velocityExponent * sumVelSq);
 
         // r_e = exp( -40 * Σ_e ||Δp_e||^2 )
-        float rEnd = Mathf.Exp(-40f * sumEndSq);
+        float rEnd = Mathf.Exp(-endEffectorExponent * sumEndSq);
 
         // r_c = exp( -10 * ||Δp_c||^2 )
-        float rCom = Mathf.Exp(-10f * comSq);
+        float rCom = Mathf.Exp(-comExponent * comSq);
 
         // --------- Weighted combination of all imitation terms ---------
         const float w_p = 0.65f; // pose
@@ -371,6 +385,21 @@ public class DeepMimicAgent : Agent
             w_v * rVel +
             w_e * rEnd +
             w_c * rCom;
+
+
+        if (Time.frameCount % 10 == 0)  // nur alle 10 Frames loggen
+        {
+            Debug.Log(
+                $"Reward Breakdown:\n" +
+                $"sumRotSq: {sumRotSq:F4}, rPose: {rPose:F4}\n" +
+                $"sumVelSq: {sumVelSq:F4}, rVel: {rVel:F4}\n" +
+                $"sumEndSq: {sumEndSq:F4}, rEnd: {rEnd:F4}\n" +
+                $"comSq: {comSq:F4}, rCom: {rCom:F4}\n" +
+                $"TOTAL imitationReward: {imitationReward:F4}"
+            );
+        }
+
+
 
         return imitationReward;
     }

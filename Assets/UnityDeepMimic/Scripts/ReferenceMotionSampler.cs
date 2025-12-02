@@ -18,12 +18,13 @@ public class ReferenceMotionSampler : MonoBehaviour
     private Vector3[] prevPositions;
     private Quaternion[] prevRotations;
 
-    private Vector3 lastComLocal;
+    private Vector3 lastComWorld;
 
 
     public struct BoneFeatures
     {
-        public Vector3 localPos; 
+        public Vector3 localPos;
+        public Vector3 worldPos;
         public Quaternion localRot; 
         public Vector3 linVel;     
         public Vector3 angVel;  
@@ -40,9 +41,9 @@ public class ReferenceMotionSampler : MonoBehaviour
         }
     }
 
-    public List<BoneFeatures> SampleAndExtract(float phase, out Vector3 comLocal)
+    public List<BoneFeatures> SampleAndExtract(float phase, out Vector3 comWorld)
     {
-        comLocal = Vector3.zero;
+        comWorld = Vector3.zero;
 
         // Validate inputs
         if (clip == null || animator == null || rootBone == null || bones.Count == 0 || sampleRateHz <= 0f)
@@ -75,9 +76,9 @@ public class ReferenceMotionSampler : MonoBehaviour
 
         SamplePoseAtPhase(phiNow);
 
-        Vector3 comWorld = ComputeCenterOfMassWorld();
-        comLocal = rootBone.InverseTransformPoint(comWorld);
-        lastComLocal = comLocal;
+        Vector3 comWorldNow = ComputeCenterOfMassWorld();
+        comWorld = comWorldNow;
+        lastComWorld = comWorldNow;
 
 
         currentFeatures.Clear();
@@ -88,6 +89,7 @@ public class ReferenceMotionSampler : MonoBehaviour
             BoneFeatures f = new BoneFeatures();
 
             f.localPos = rootBone.InverseTransformPoint(bone.position);
+            f.worldPos = bone.position;
             f.localRot = Quaternion.Inverse(rootBone.rotation) * bone.rotation;
 
             Vector3 prevPos = prevPositions[i];
@@ -105,9 +107,9 @@ public class ReferenceMotionSampler : MonoBehaviour
 
         return currentFeatures;
     }
-    public List<BoneFeatures> SampleAndExtractPhases(float phaseNow, float phasePrev, float deltaTime, out Vector3 comLocal)
+    public List<BoneFeatures> SampleAndExtractPhases(float phaseNow, float phasePrev, float deltaTime, out Vector3 comWorld)
     {
-        comLocal = Vector3.zero;
+        comWorld = Vector3.zero;
 
         if (clip == null || animator == null || rootBone == null || bones.Count == 0)
             return currentFeatures;
@@ -132,9 +134,9 @@ public class ReferenceMotionSampler : MonoBehaviour
         // ------------------------------------------
         SamplePoseAtPhase(phiNow);
 
-        Vector3 comWorld = ComputeCenterOfMassWorld();
-        comLocal = rootBone.InverseTransformPoint(comWorld);
-        lastComLocal = comLocal;
+        Vector3 comWorldNow = ComputeCenterOfMassWorld();
+        comWorld = comWorldNow;                                                 
+        lastComWorld = comWorldNow;
 
         currentFeatures.Clear();
 
@@ -147,6 +149,7 @@ public class ReferenceMotionSampler : MonoBehaviour
 
             // Local position and rotation relative to the root
             f.localPos = rootBone.InverseTransformPoint(bone.position);
+            f.worldPos = bone.position;
             f.localRot = Quaternion.Inverse(rootBone.rotation) * bone.rotation;
 
             // Previous transforms
@@ -232,10 +235,10 @@ public class ReferenceMotionSampler : MonoBehaviour
         if (rootBone == null)
             return;
 
-        Vector3 comLocalToWorld = rootBone.TransformPoint(lastComLocal);
+        Vector3 comWorld = lastComWorld;             
 
         Gizmos.color = Color.cyan;
-        Gizmos.DrawSphere(comLocalToWorld, 0.03f);
+        Gizmos.DrawSphere(comWorld, 0.03f);
     }
 
 }

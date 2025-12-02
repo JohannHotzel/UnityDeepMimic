@@ -136,7 +136,7 @@ public class DeepMimicAgent : Agent
         float phaseNow = phase;
         float phasePrev = phaseNow;
 
-        var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, 0f, out Vector3 com);
+        var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, 0f, out Vector3 refComWorld);
 
         
         int count = Mathf.Min(jd.bodyPartsList.Count, refFeatures.Count);
@@ -165,7 +165,7 @@ public class DeepMimicAgent : Agent
         }
 
         UpdateEndEffectorTargetsDebug(refFeatures);
-        UpdateCenterOfMassDebug(com);
+        UpdateCenterOfMassDebug(refComWorld);
     }
     public override void CollectObservations(VectorSensor sensor)
     {
@@ -276,12 +276,12 @@ public class DeepMimicAgent : Agent
         if (phasePrev < 0f)
             phasePrev += 1f;
 
-        var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, dtSim, out Vector3 refComLocal);
+        var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, dtSim, out Vector3 refComWorld);
 
         UpdateEndEffectorTargetsDebug(refFeatures);
-        UpdateCenterOfMassDebug(refComLocal);
+        UpdateCenterOfMassDebug(refComWorld);
 
-        float imitationReward = ComputeTrackingReward(refFeatures, refComLocal);
+        float imitationReward = ComputeTrackingReward(refFeatures, refComWorld);
         float taskReward = ComputeTargetHeadingReward();
 
         float totalReward = imitationWeight * imitationReward + taskWeight * taskReward;
@@ -303,7 +303,7 @@ public class DeepMimicAgent : Agent
     //--------------------------------------------------------------------------------------------------------------
     // Reward Computation
     //--------------------------------------------------------------------------------------------------------------
-    private float ComputeTrackingReward(List<ReferenceMotionSampler.BoneFeatures> refFeatures, Vector3 refComLocal)
+    private float ComputeTrackingReward(List<ReferenceMotionSampler.BoneFeatures> refFeatures, Vector3 refComWorld)
     {
         int count = Mathf.Min(refFeatures.Count, jd.bodyPartsList.Count);
 
@@ -317,8 +317,8 @@ public class DeepMimicAgent : Agent
         Quaternion rootRot = root.rotation;
 
         // --------- Center of Mass term (agent vs reference) ----------
-        Vector3 agentComLocal = ComputeAgentCenterOfMassLocal();
-        Vector3 comDiff = refComLocal - agentComLocal;
+        Vector3 agentComWorld = ComputeAgentCenterOfMassWorld();          
+        Vector3 comDiff = refComWorld - agentComWorld;                   
         comSq = comDiff.sqrMagnitude;
 
         // --------- Joint rotation + velocity tracking ----------
@@ -348,7 +348,7 @@ public class DeepMimicAgent : Agent
             // End-effector positional tracking (hands & feet)
             if (IsEndEffector(bp.rb.transform))
             {
-                Vector3 refWorldPos = root.TransformPoint(f.localPos);
+                Vector3 refWorldPos = f.worldPos;
                 Vector3 diff = refWorldPos - bp.rb.position;
                 sumEndSq += diff.sqrMagnitude;
             }
@@ -449,6 +449,26 @@ public class DeepMimicAgent : Agent
         Vector3 comWorld = accum / totalMass;
         return hips.InverseTransformPoint(comWorld);
     }
+    private Vector3 ComputeAgentCenterOfMassWorld()
+    {
+        float totalMass = 0f;
+        Vector3 accum = Vector3.zero;
+
+        for (int i = 0; i < jd.bodyPartsList.Count; i++)
+        {
+            var bp = jd.bodyPartsList[i];
+            if (bp.rb == null) continue;
+
+            float m = bp.rb.mass;
+            totalMass += m;
+            accum += bp.rb.transform.position * m;                        
+        }
+
+        if (totalMass <= 0f)
+            return hips.position; 
+
+        return accum / totalMass;                                        
+    }
 
 
     //--------------------------------------------------------------------------------------------------------------
@@ -478,7 +498,7 @@ public class DeepMimicAgent : Agent
             return;
         }
 
-        Transform root = hips;
+
         int count = Mathf.Min(refFeatures.Count, jd.bodyPartsList.Count);
 
         for (int i = 0; i < count; i++)
@@ -488,7 +508,10 @@ public class DeepMimicAgent : Agent
                 continue;
 
             var f = refFeatures[i];
-            Vector3 refWorldPos = root.TransformPoint(f.localPos);
+            // ALT:
+            // Vector3 refWorldPos = root.TransformPoint(f.localPos);
+
+            Vector3 refWorldPos = f.worldPos;                           
 
             if (bp.rb.transform == handL && leftHandEndEffector != null)
             {
@@ -508,21 +531,17 @@ public class DeepMimicAgent : Agent
             }
         }
     }
-    private void UpdateCenterOfMassDebug(Vector3 refComLocal)
+    private void UpdateCenterOfMassDebug(Vector3 refComWorld)
     {
         if (comTarget == null || comRagdoll == null)
         {
             return;
         }
 
-        Transform root = hips;
+        comTarget.position = refComWorld;                            
 
-        Vector3 refComWorld = root.TransformPoint(refComLocal);
-        comTarget.position = refComWorld;
-
-        Vector3 ragdollComLocal = ComputeAgentCenterOfMassLocal();
-        Vector3 ragdollComWorld = root.TransformPoint(ragdollComLocal);
-        comRagdoll.position = ragdollComWorld;
+        Vector3 ragdollComWorld = ComputeAgentCenterOfMassWorld();      
+        comRagdoll.position = ragdollComWorld;                        
     }
 
 

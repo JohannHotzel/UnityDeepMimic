@@ -28,6 +28,10 @@ public class DeepMimicAgent : Agent
 
     [Header("Reference Motion")]
     public ReferenceMotionSampler referenceSampler;
+    private Vector3 referenceSamplerInitialPos;
+    private Quaternion referenceSamplerInitialRot;
+
+
 
     [Header("Reward Exponents")]
 
@@ -93,6 +97,12 @@ public class DeepMimicAgent : Agent
         decisionRequester = GetComponent<DecisionRequester>();
         m_DirectionIndicator = GetComponentInChildren<DirectionIndicator>();
 
+        if (referenceSampler != null)
+        {
+            referenceSamplerInitialPos = referenceSampler.transform.position;
+            referenceSamplerInitialRot = referenceSampler.transform.rotation;
+        }
+
         // Setup body parts
         jd.SetupBodyPart(hips);
         jd.SetupBodyPart(chest);
@@ -126,7 +136,14 @@ public class DeepMimicAgent : Agent
 
         //hips.rotation = Quaternion.Euler(0, Random.Range(0.0f, 360.0f), 0);
 
-       // phase = Random.Range(0f, 1f);
+        // phase = Random.Range(0f, 1f);
+
+        if (referenceSampler != null)
+        {
+            referenceSampler.transform.position = referenceSamplerInitialPos;
+            referenceSampler.transform.rotation = referenceSamplerInitialRot;
+        }
+
         phase = 0f;
 
         InitializeToReferencePose(phase, true);
@@ -270,6 +287,20 @@ public class DeepMimicAgent : Agent
         // --------- Sample Reference Features at Current Phase -----------------------------
         float dtSim = GetDecisionDeltaTime(); 
         float deltaPhase = dtSim * phaseSpeed;
+
+
+        if (referenceSampler != null)
+        {
+            Vector3 fwd = Vector3.forward;
+            fwd.y = 0f;
+
+            if (fwd.sqrMagnitude > 1e-6f)
+            {
+                fwd.Normalize();
+                referenceSampler.transform.position += fwd * desiredSpeed * dtSim;
+            }
+        }
+
 
         float phaseNow = phase;
         float phasePrev = phaseNow - deltaPhase;

@@ -5,7 +5,7 @@ behaviors:
     hyperparameters:
       batch_size: 256
       buffer_size: 4096
-      learning_rate: 7.5e-05
+      learning_rate: 5.0e-05
       beta: 0.005
       epsilon: 0.2
       lambd: 0.95
@@ -39,7 +39,7 @@ behaviors:
     keep_checkpoints: 5
     even_checkpoints: false
     max_steps: 20000000
-    time_horizon: 64
+    time_horizon: 32
     summary_freq: 50000
     threaded: false
     self_play: null

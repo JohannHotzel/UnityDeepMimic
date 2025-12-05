@@ -136,7 +136,7 @@ public class DeepMimicAgent : Agent
 
         //hips.rotation = Quaternion.Euler(0, Random.Range(0.0f, 360.0f), 0);
 
-        // phase = Random.Range(0f, 1f);
+         phase = Random.Range(0f, 1f);
 
         if (referenceSampler != null)
         {
@@ -144,16 +144,27 @@ public class DeepMimicAgent : Agent
             referenceSampler.transform.rotation = referenceSamplerInitialRot;
         }
 
-        phase = 0f;
+       // phase = 0f;
 
         InitializeToReferencePose(phase, true);
     }
     private void InitializeToReferencePose(float phase, bool setVelocities)
     {
-        float phaseNow = phase;
-        float phasePrev = phaseNow;
 
-        var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, 0f, out Vector3 refComWorld);
+        if (referenceSampler == null)
+            return;
+
+        float dtSim = GetDecisionDeltaTime();
+        float deltaPhase = dtSim * phaseSpeed;
+
+
+
+        float phaseNow = phase;
+        float phasePrev = phaseNow - deltaPhase;
+        if (phasePrev < 0f)
+            phasePrev += 1f;
+
+        var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, dtSim, out Vector3 refComWorld);
 
         
         int count = Mathf.Min(jd.bodyPartsList.Count, refFeatures.Count);
@@ -171,8 +182,21 @@ public class DeepMimicAgent : Agent
 
             if (setVelocities)
             {
-                bp.rb.linearVelocity = Vector3.zero;
-                bp.rb.angularVelocity = Vector3.zero;
+                Vector3 fwd = Vector3.forward;
+                Vector3 velocity = Vector3.zero;
+                fwd.y = 0f;
+
+                if (fwd.sqrMagnitude > 1e-6f)
+                {
+                    fwd.Normalize();
+                    velocity = fwd * desiredSpeed;
+                }
+
+                Vector3 worldLinVel = hips.TransformDirection(feat.linVel);
+                Vector3 worldAngVel = hips.TransformDirection(feat.angVel);
+
+                bp.rb.linearVelocity = worldLinVel + velocity;
+                bp.rb.angularVelocity = worldAngVel;
             }
 
             if (bp.groundContact) bp.groundContact.touchingGround = false;
@@ -297,7 +321,8 @@ public class DeepMimicAgent : Agent
             if (fwd.sqrMagnitude > 1e-6f)
             {
                 fwd.Normalize();
-                referenceSampler.transform.position += fwd * desiredSpeed * dtSim;
+                Vector3 velocity = fwd * desiredSpeed * dtSim;
+                referenceSampler.transform.position += velocity;
             }
         }
 

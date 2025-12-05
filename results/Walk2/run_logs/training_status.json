@@ -1,0 +1,65 @@
+{
+    "DMWalker": {
+        "checkpoints": [
+            {
+                "steps": 58499986,
+                "file_path": "results\\Walk2\\DMWalker\\DMWalker-58499986.onnx",
+                "reward": 46.56344094769708,
+                "creation_time": 1764948331.3842902,
+                "auxillary_file_paths": [
+                    "results\\Walk2\\DMWalker\\DMWalker-58499986.pt"
+                ]
+            },
+            {
+                "steps": 58999988,
+                "file_path": "results\\Walk2\\DMWalker\\DMWalker-58999988.onnx",
+                "reward": 47.334556066072906,
+                "creation_time": 1764948611.1188176,
+                "auxillary_file_paths": [
+                    "results\\Walk2\\DMWalker\\DMWalker-58999988.pt"
+                ]
+            },
+            {
+                "steps": 59499991,
+                "file_path": "results\\Walk2\\DMWalker\\DMWalker-59499991.onnx",
+                "reward": 48.32928330557687,
+                "creation_time": 1764948890.2412667,
+                "auxillary_file_paths": [
+                    "results\\Walk2\\DMWalker\\DMWalker-59499991.pt"
+                ]
+            },
+            {
+                "steps": 59999970,
+                "file_path": "results\\Walk2\\DMWalker\\DMWalker-59999970.onnx",
+                "reward": 42.90565108363308,
+                "creation_time": 1764949169.4019907,
+                "auxillary_file_paths": [
+                    "results\\Walk2\\DMWalker\\DMWalker-59999970.pt"
+                ]
+            },
+            {
+                "steps": 60000002,
+                "file_path": "results\\Walk2\\DMWalker\\DMWalker-60000002.onnx",
+                "reward": 42.90565108363308,
+                "creation_time": 1764949169.5061252,
+                "auxillary_file_paths": [
+                    "results\\Walk2\\DMWalker\\DMWalker-60000002.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 60000002,
+            "file_path": "results\\Walk2\\DMWalker.onnx",
+            "reward": 42.90565108363308,
+            "creation_time": 1764949169.5061252,
+            "auxillary_file_paths": [
+                "results\\Walk2\\DMWalker\\DMWalker-60000002.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.2.0.dev0",
+        "torch_version": "2.2.2+cu121"
+    }
+}

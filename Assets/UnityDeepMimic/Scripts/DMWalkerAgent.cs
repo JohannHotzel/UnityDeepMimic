@@ -32,9 +32,7 @@ public class DeepMimicAgent : Agent
     private Quaternion referenceSamplerInitialRot;
 
 
-
     [Header("Reward Exponents")]
-
     [Tooltip("Exponent for pose tracking. Default = 2.0 (corresponds to exp(-2 * sumRotSq)).")]
     public float poseExponent = 2f;
 
@@ -50,19 +48,19 @@ public class DeepMimicAgent : Agent
     [Header("End Effector Targets and Com (Debug Spheres)")]
     public Transform leftHandEndEffector; 
     public Transform rightHandEndEffector;  
-    public Transform leftFootEndEffector;  
+    public Transform leftFootEndEffector;
     public Transform rightFootEndEffector;
     public Transform comTarget;   
     public Transform comRagdoll;
+
 
     [Header("Action Smoothing")]
     [Range(0f, 1f)]
     public float actionSmoothing = 0.2f; 
     private float[] smoothedActions;
 
-
     [Header("Phase Settings")]
-    public float phaseSpeed = 1f; // cycles per second
+    public float phaseSpeed = 1f;
     private float phase;
 
     private DMJointDriveController jd;
@@ -144,8 +142,6 @@ public class DeepMimicAgent : Agent
             referenceSampler.transform.rotation = referenceSamplerInitialRot;
         }
 
-       // phase = 0f;
-
         InitializeToReferencePose(phase, true);
     }
     private void InitializeToReferencePose(float phase, bool setVelocities)
@@ -154,10 +150,8 @@ public class DeepMimicAgent : Agent
         if (referenceSampler == null)
             return;
 
-        float dtSim = GetDecisionDeltaTime();
+        float dtSim = Time.fixedDeltaTime;
         float deltaPhase = dtSim * phaseSpeed;
-
-
 
         float phaseNow = phase;
         float phasePrev = phaseNow - deltaPhase;
@@ -166,7 +160,7 @@ public class DeepMimicAgent : Agent
 
         var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, dtSim, out Vector3 refComWorld);
 
-        
+      
         int count = Mathf.Min(jd.bodyPartsList.Count, refFeatures.Count);
 
         for (int i = 0; i < count; i++)
@@ -266,17 +260,15 @@ public class DeepMimicAgent : Agent
 
         var continuousActions = actions.ContinuousActions;
 
-        // --- Initialize smoothing buffer once or if size changed ---
         if (smoothedActions == null || smoothedActions.Length != continuousActions.Length)
         {
             smoothedActions = new float[continuousActions.Length];
             for (int k = 0; k < continuousActions.Length; k++)
             {
-                smoothedActions[k] = continuousActions[k]; // start without a jump
+                smoothedActions[k] = continuousActions[k];
             }
         }
 
-        // --- Apply simple exponential smoothing: smoothed = lerp(old, new, alpha) ---
         float alpha = actionSmoothing; // 0..1
         for (int k = 0; k < continuousActions.Length; k++)
         {
@@ -309,23 +301,8 @@ public class DeepMimicAgent : Agent
 
 
         // --------- Sample Reference Features at Current Phase -----------------------------
-        float dtSim = GetDecisionDeltaTime(); 
+        float dtSim = Time.fixedDeltaTime; 
         float deltaPhase = dtSim * phaseSpeed;
-
-
-        if (referenceSampler != null)
-        {
-            Vector3 fwd = Vector3.forward;
-            fwd.y = 0f;
-
-            if (fwd.sqrMagnitude > 1e-6f)
-            {
-                fwd.Normalize();
-                Vector3 velocity = fwd * desiredSpeed * dtSim;
-                referenceSampler.transform.position += velocity;
-            }
-        }
-
 
         float phaseNow = phase;
         float phasePrev = phaseNow - deltaPhase;
@@ -343,10 +320,24 @@ public class DeepMimicAgent : Agent
         float totalReward = imitationWeight * imitationReward + taskWeight * taskReward;
         AddReward(totalReward);
 
-        // Phase für den nächsten Schritt fortschreiben
+        
+
         phase += deltaPhase;
         if (phase >= 1f)
             phase -= 1f;
+
+        if (referenceSampler != null)
+        {
+            Vector3 fwd = Vector3.forward;
+            fwd.y = 0f;
+
+            if (fwd.sqrMagnitude > 1e-6f)
+            {
+                fwd.Normalize();
+                Vector3 velocity = fwd * desiredSpeed * dtSim;
+                referenceSampler.transform.position += velocity;
+            }
+        }
 
     }
 
@@ -524,22 +515,6 @@ public class DeepMimicAgent : Agent
             return hips.position; 
 
         return accum / totalMass;                                        
-    }
-
-
-    //--------------------------------------------------------------------------------------------------------------
-    // Delta Time for Decision Intervals
-    //--------------------------------------------------------------------------------------------------------------
-    private float GetDecisionDeltaTime()
-    {
-        int period = 1;
-
-        if (decisionRequester != null && decisionRequester.DecisionPeriod > 0)
-        {
-            period = decisionRequester.DecisionPeriod;
-        }
-
-        return Time.fixedDeltaTime * period;
     }
 
 

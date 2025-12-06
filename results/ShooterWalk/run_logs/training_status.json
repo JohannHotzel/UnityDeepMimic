@@ -1,0 +1,56 @@
+{
+    "DMWalker": {
+        "checkpoints": [
+            {
+                "steps": 499998,
+                "file_path": "results\\ShooterWalk\\DMWalker\\DMWalker-499998.onnx",
+                "reward": 54.5179286965957,
+                "creation_time": 1765062099.7718966,
+                "auxillary_file_paths": [
+                    "results\\ShooterWalk\\DMWalker\\DMWalker-499998.pt"
+                ]
+            },
+            {
+                "steps": 999974,
+                "file_path": "results\\ShooterWalk\\DMWalker\\DMWalker-999974.onnx",
+                "reward": 68.35989557452162,
+                "creation_time": 1765062386.8368955,
+                "auxillary_file_paths": [
+                    "results\\ShooterWalk\\DMWalker\\DMWalker-999974.pt"
+                ]
+            },
+            {
+                "steps": 1499969,
+                "file_path": "results\\ShooterWalk\\DMWalker\\DMWalker-1499969.onnx",
+                "reward": 99.91089965899785,
+                "creation_time": 1765062671.746551,
+                "auxillary_file_paths": [
+                    "results\\ShooterWalk\\DMWalker\\DMWalker-1499969.pt"
+                ]
+            },
+            {
+                "steps": 1502707,
+                "file_path": "results\\ShooterWalk\\DMWalker\\DMWalker-1502707.onnx",
+                "reward": 83.6399989972512,
+                "creation_time": 1765062673.0029755,
+                "auxillary_file_paths": [
+                    "results\\ShooterWalk\\DMWalker\\DMWalker-1502707.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 1502707,
+            "file_path": "results\\ShooterWalk\\DMWalker.onnx",
+            "reward": 83.6399989972512,
+            "creation_time": 1765062673.0029755,
+            "auxillary_file_paths": [
+                "results\\ShooterWalk\\DMWalker\\DMWalker-1502707.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.2.0.dev0",
+        "torch_version": "2.2.2+cu121"
+    }
+}

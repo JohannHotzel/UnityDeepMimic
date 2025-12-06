@@ -70,7 +70,8 @@ public class DeepMimicAgent : Agent
 
     [Header("Task: Target Heading")]
     public Transform target;         
-    public float desiredSpeed = 1.0f;  
+    public float desiredSpeed = 1.0f;
+    public Vector3 headingDirection;
     [Range(0f, 1f)]
     public float imitationWeight = 0.7f;
     [Range(0f, 1f)]
@@ -132,15 +133,25 @@ public class DeepMimicAgent : Agent
         foreach (var bp in jd.bodyPartsList)
             bp.Reset();
 
-        //hips.rotation = Quaternion.Euler(0, Random.Range(0.0f, 360.0f), 0);
+        phase = Random.Range(0f, 1f);
 
-         phase = Random.Range(0f, 1f);
+
+        // Align Ragdoll and Reference Sampler Heading
+        Vector3 ragdollHeading = GetHeading(hips);
+        Quaternion lookRot = Quaternion.LookRotation(ragdollHeading, Vector3.up);
+        hips.rotation = Quaternion.Euler(0f, lookRot.eulerAngles.y, 0f);
+
 
         if (referenceSampler != null)
         {
             referenceSampler.transform.position = referenceSamplerInitialPos;
             referenceSampler.transform.rotation = referenceSamplerInitialRot;
+
+            Vector3 refHeading = GetHeading(referenceSampler.rootBone);
+            Quaternion refLookRot = Quaternion.LookRotation(refHeading, Vector3.up);
+            referenceSampler.transform.rotation = Quaternion.Euler(0f, refLookRot.eulerAngles.y, 0f);
         }
+
 
         InitializeToReferencePose(phase, true);
     }
@@ -163,28 +174,21 @@ public class DeepMimicAgent : Agent
 
             Vector3 worldPos = hips.TransformPoint(feat.localPos);
             Quaternion worldRot = hips.rotation * feat.localRot;
-
             bp.rb.transform.position = worldPos;
             bp.rb.transform.rotation = worldRot;
 
             if (setVelocities)
             {
-                Vector3 fwd = Vector3.forward;
-                Vector3 velocity = Vector3.zero;
-                fwd.y = 0f;
+                Vector3 moveDir = GetHeading(hips);
+                Vector3 velocityOffset = moveDir * desiredSpeed;
 
-                if (fwd.sqrMagnitude > 1e-6f)
-                {
-                    fwd.Normalize();
-                    velocity = fwd * desiredSpeed;
-                }
-
-                Vector3 worldLinVel = hips.TransformDirection(feat.linVel);
+                Vector3 worldLinVel = hips.TransformDirection(feat.linVel) + velocityOffset;
                 Vector3 worldAngVel = hips.TransformDirection(feat.angVel);
 
-                bp.rb.linearVelocity = worldLinVel + velocity;
+                bp.rb.linearVelocity = worldLinVel;
                 bp.rb.angularVelocity = worldAngVel;
             }
+
 
             if (bp.groundContact) bp.groundContact.touchingGround = false;
             if (bp.targetContact) bp.targetContact.touchingTarget = false;
@@ -217,35 +221,25 @@ public class DeepMimicAgent : Agent
         sensor.AddObservation(phase);
 
 
+        Vector3 headingWorld = GetHeading(hips);
+        headingWorld.y = 0f;
 
-        if (target != null)
+        if (headingWorld.sqrMagnitude > 1e-6f)
         {
-            Vector3 toTarget = target.position - hips.position;
-            toTarget.y = 0f;
-
-            if (toTarget.sqrMagnitude > 1e-6f)
-            {
-                Vector3 dStarWorld = toTarget.normalized;
-
-                Vector3 dStarLocal = hips.InverseTransformDirection(dStarWorld);
-                dStarLocal.y = 0f;
-
-                sensor.AddObservation(dStarLocal.normalized); 
-            }
-
-            else
-            {
-                sensor.AddObservation(Vector3.zero);
-            }
-
-            sensor.AddObservation(desiredSpeed);
+            Vector3 headingLocal = hips.InverseTransformDirection(headingWorld);
+            headingLocal.y = 0f;
+            headingLocal.Normalize();
+            sensor.AddObservation(headingLocal);
         }
-
         else
         {
             sensor.AddObservation(Vector3.zero);
-            sensor.AddObservation(0f);
         }
+
+        headingDirection = headingWorld;
+
+        sensor.AddObservation(desiredSpeed);
+
 
     }
     public override void OnActionReceived(ActionBuffers actions)
@@ -271,6 +265,7 @@ public class DeepMimicAgent : Agent
         UpdateCenterOfMassDebug(refComWorld);
 
 
+
         // Update Phase and Reference Sampler Position
         phase += deltaPhase;
         if (phase >= 1f)
@@ -278,15 +273,14 @@ public class DeepMimicAgent : Agent
 
         if (referenceSampler != null)
         {
-            Vector3 fwd = Vector3.forward;
-            fwd.y = 0f;
+            Vector3 moveDir = GetHeading(referenceSampler.rootBone);
 
-            if (fwd.sqrMagnitude > 1e-6f)
-            {
-                fwd.Normalize();
-                Vector3 velocity = fwd * desiredSpeed * dtSim;
-                referenceSampler.transform.position += velocity;
-            }
+            Vector3 pos = referenceSampler.transform.position;
+            pos += moveDir * desiredSpeed * dtSim;
+            referenceSampler.transform.position = pos;
+
+            Quaternion lookRot = Quaternion.LookRotation(moveDir, Vector3.up);
+            referenceSampler.transform.rotation = Quaternion.Euler(0f, lookRot.eulerAngles.y, 0f);
         }
 
     }
@@ -442,22 +436,22 @@ public class DeepMimicAgent : Agent
         if (target == null)
             return 0f;
 
-        Vector3 toTarget = target.position - hips.position;
-        toTarget.y = 0f;
+        Vector3 dStar = GetHeading(hips);
+        dStar.y = 0f;
 
+        if (dStar.sqrMagnitude < 1e-6f)
+            return 0f;
 
-        Vector3 dStar = toTarget.normalized;
+        dStar.Normalize();
 
         var hipsBP = jd.bodyPartsDict[hips];
         Vector3 v = hipsBP.rb.linearVelocity;
         v.y = 0f;
 
         float vParallel = Vector3.Dot(v, dStar);
-
         float vStar = desiredSpeed;
 
         float speedError = Mathf.Max(0f, vStar - vParallel);
-
         float rG = Mathf.Exp(-2.5f * speedError * speedError);
 
         return rG;
@@ -502,6 +496,25 @@ public class DeepMimicAgent : Agent
         if (phasePrev < 0f)
             phasePrev += 1f;
     }
+    private Vector3 GetHeading(Transform root)
+    {
+        if (root == null)
+            return Vector3.forward;
+
+        if (target != null)
+        {
+            Vector3 toTarget = target.position - root.position;
+            toTarget.y = 0f;
+
+            if (toTarget.sqrMagnitude > 1e-6f)
+            {
+                return toTarget.normalized;
+            }
+        }
+
+        return Vector3.forward;
+    }
+
 
 
 

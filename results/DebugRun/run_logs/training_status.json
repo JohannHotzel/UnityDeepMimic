@@ -1,0 +1,56 @@
+{
+    "DMWalker": {
+        "checkpoints": [
+            {
+                "steps": 499999,
+                "file_path": "results\\DebugRun\\DMWalker\\DMWalker-499999.onnx",
+                "reward": 50.188759971410036,
+                "creation_time": 1765037803.87676,
+                "auxillary_file_paths": [
+                    "results\\DebugRun\\DMWalker\\DMWalker-499999.pt"
+                ]
+            },
+            {
+                "steps": 999983,
+                "file_path": "results\\DebugRun\\DMWalker\\DMWalker-999983.onnx",
+                "reward": 58.23027857829784,
+                "creation_time": 1765038070.965297,
+                "auxillary_file_paths": [
+                    "results\\DebugRun\\DMWalker\\DMWalker-999983.pt"
+                ]
+            },
+            {
+                "steps": 1499988,
+                "file_path": "results\\DebugRun\\DMWalker\\DMWalker-1499988.onnx",
+                "reward": 60.900736232598625,
+                "creation_time": 1765038353.6270244,
+                "auxillary_file_paths": [
+                    "results\\DebugRun\\DMWalker\\DMWalker-1499988.pt"
+                ]
+            },
+            {
+                "steps": 1673024,
+                "file_path": "results\\DebugRun\\DMWalker\\DMWalker-1673024.onnx",
+                "reward": 59.06698471733502,
+                "creation_time": 1765038453.0770848,
+                "auxillary_file_paths": [
+                    "results\\DebugRun\\DMWalker\\DMWalker-1673024.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 1673024,
+            "file_path": "results\\DebugRun\\DMWalker.onnx",
+            "reward": 59.06698471733502,
+            "creation_time": 1765038453.0770848,
+            "auxillary_file_paths": [
+                "results\\DebugRun\\DMWalker\\DMWalker-1673024.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.2.0.dev0",
+        "torch_version": "2.2.2+cu121"
+    }
+}

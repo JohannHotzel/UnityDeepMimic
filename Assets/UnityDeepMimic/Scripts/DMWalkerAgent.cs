@@ -150,14 +150,7 @@ public class DeepMimicAgent : Agent
         if (referenceSampler == null)
             return;
 
-        float dtSim = Time.fixedDeltaTime;
-        float deltaPhase = dtSim * phaseSpeed;
-
-        float phaseNow = phase;
-        float phasePrev = phaseNow - deltaPhase;
-        if (phasePrev < 0f)
-            phasePrev += 1f;
-
+        ComputePhaseWindow(out float dtSim, out float phaseNow, out float phasePrev, out float deltaPhase);
         var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, dtSim, out Vector3 refComWorld);
 
       
@@ -257,71 +250,28 @@ public class DeepMimicAgent : Agent
     }
     public override void OnActionReceived(ActionBuffers actions)
     {
-
-        var continuousActions = actions.ContinuousActions;
-
-        if (smoothedActions == null || smoothedActions.Length != continuousActions.Length)
-        {
-            smoothedActions = new float[continuousActions.Length];
-            for (int k = 0; k < continuousActions.Length; k++)
-            {
-                smoothedActions[k] = continuousActions[k];
-            }
-        }
-
-        float alpha = actionSmoothing; // 0..1
-        for (int k = 0; k < continuousActions.Length; k++)
-        {
-            float raw = continuousActions[k];
-            float prev = smoothedActions[k];
-            float s = Mathf.Lerp(prev, raw, alpha);
-
-            smoothedActions[k] = s;
-        }
-
-        int i = -1;
-        var bp = jd.bodyPartsDict;
-
-        bp[chest].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
-        bp[spine].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
-
-        bp[thighL].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
-        bp[thighR].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
-        bp[shinL].SetJointTargetRotationLocal(smoothedActions[++i], 0, 0);
-        bp[shinR].SetJointTargetRotationLocal(smoothedActions[++i], 0, 0);
-        bp[footR].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
-        bp[footL].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
-
-        bp[armL].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
-        bp[armR].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
-        bp[forearmL].SetJointTargetRotationLocal(smoothedActions[++i], 0, 0);
-        bp[forearmR].SetJointTargetRotationLocal(smoothedActions[++i], 0, 0);
-        bp[head].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
+        // Apply Actions to Joints
+        ApplyActionsToJoints(actions.ContinuousActions);
 
 
-
-        // --------- Sample Reference Features at Current Phase -----------------------------
-        float dtSim = Time.fixedDeltaTime; 
-        float deltaPhase = dtSim * phaseSpeed;
-
-        float phaseNow = phase;
-        float phasePrev = phaseNow - deltaPhase;
-        if (phasePrev < 0f)
-            phasePrev += 1f;
-
+        // Sample Reference Features at Current Phase 
+        ComputePhaseWindow(out float dtSim, out float phaseNow, out float phasePrev, out float deltaPhase);
         var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, dtSim, out Vector3 refComWorld);
 
-        UpdateEndEffectorTargetsDebug(refFeatures);
-        UpdateCenterOfMassDebug(refComWorld);
 
+        // Compute Reward 
         float imitationReward = ComputeTrackingReward(refFeatures, refComWorld);
         float taskReward = ComputeTargetHeadingReward();
-
         float totalReward = imitationWeight * imitationReward + taskWeight * taskReward;
         AddReward(totalReward);
 
-        
 
+        // Debug Updates
+        UpdateEndEffectorTargetsDebug(refFeatures);
+        UpdateCenterOfMassDebug(refComWorld);
+
+
+        // Update Phase and Reference Sampler Position
         phase += deltaPhase;
         if (phase >= 1f)
             phase -= 1f;
@@ -340,7 +290,6 @@ public class DeepMimicAgent : Agent
         }
 
     }
-
     public override void Heuristic(in ActionBuffers actionsOut)
     {
 
@@ -348,8 +297,52 @@ public class DeepMimicAgent : Agent
 
 
     //--------------------------------------------------------------------------------------------------------------
-    // Reward Computation
+    // Action and Reward Computation
     //--------------------------------------------------------------------------------------------------------------
+    private void ApplyActionsToJoints(ActionSegment<float> continuousActions)
+    {
+        // --- 1. Allocate or update smoothing buffer ---
+        if (smoothedActions == null || smoothedActions.Length != continuousActions.Length)
+        {
+            smoothedActions = new float[continuousActions.Length];
+            for (int k = 0; k < continuousActions.Length; k++)
+                smoothedActions[k] = continuousActions[k];
+        }
+
+        // --- 2. Smooth incoming actions ---
+        float alpha = actionSmoothing; // (0..1)
+        for (int k = 0; k < continuousActions.Length; k++)
+        {
+            float raw = continuousActions[k];
+            float prev = smoothedActions[k];
+            smoothedActions[k] = Mathf.Lerp(prev, raw, alpha);
+        }
+
+        // --- 3. Map smoothed actions to joints ---
+        int i = -1;
+        var bp = jd.bodyPartsDict;
+
+        bp[chest].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
+        bp[spine].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
+
+        bp[thighL].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
+        bp[thighR].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
+
+        bp[shinL].SetJointTargetRotationLocal(smoothedActions[++i], 0, 0);
+        bp[shinR].SetJointTargetRotationLocal(smoothedActions[++i], 0, 0);
+
+        bp[footR].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
+        bp[footL].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
+
+        bp[armL].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
+        bp[armR].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
+
+        bp[forearmL].SetJointTargetRotationLocal(smoothedActions[++i], 0, 0);
+        bp[forearmR].SetJointTargetRotationLocal(smoothedActions[++i], 0, 0);
+
+        bp[head].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
+    }
+
     private float ComputeTrackingReward(List<ReferenceMotionSampler.BoneFeatures> refFeatures, Vector3 refComWorld)
     {
         int count = Mathf.Min(refFeatures.Count, jd.bodyPartsList.Count);
@@ -473,29 +466,6 @@ public class DeepMimicAgent : Agent
     {
         return t == footL || t == footR || t == handL || t == handR;
     }
-    private Vector3 ComputeAgentCenterOfMassLocal()
-    {
-        float totalMass = 0f;
-        Vector3 accum = Vector3.zero;
-
-        for (int i = 0; i < jd.bodyPartsList.Count; i++)
-        {
-            var bp = jd.bodyPartsList[i];
-            float m = 1f; // Default
-
-            if (bp.rb)
-                m = bp.rb.mass;
-
-            totalMass += m;
-            accum += bp.rb.transform.position * m;
-        }
-
-        if (totalMass <= 0f)
-            return hips.position; // fallback
-
-        Vector3 comWorld = accum / totalMass;
-        return hips.InverseTransformPoint(comWorld);
-    }
     private Vector3 ComputeAgentCenterOfMassWorld()
     {
         float totalMass = 0f;
@@ -516,6 +486,23 @@ public class DeepMimicAgent : Agent
 
         return accum / totalMass;                                        
     }
+
+
+    //--------------------------------------------------------------------------------------------------------------
+    // Helpers
+    //--------------------------------------------------------------------------------------------------------------
+    private void ComputePhaseWindow(out float dtSim, out float phaseNow, out float phasePrev, out float deltaPhase)
+    {
+        dtSim = Time.fixedDeltaTime;
+        deltaPhase = dtSim * phaseSpeed;
+
+        phaseNow = phase;
+        phasePrev = phaseNow - deltaPhase;
+
+        if (phasePrev < 0f)
+            phasePrev += 1f;
+    }
+
 
 
     //--------------------------------------------------------------------------------------------------------------

@@ -65,23 +65,18 @@ public class DeepMimicAgent : Agent
 
     private DMJointDriveController jd;
     private DecisionRequester decisionRequester;
-    DirectionIndicator m_DirectionIndicator;
+    public DirectionIndicator m_DirectionIndicator;
+    public HeadingController headingController;
 
 
-    [Header("Task: Target Heading")]
-    public Transform target;         
+    [Header("Task Settings")]
     public float desiredSpeed = 1.0f;
-    public Vector3 headingDirection;
+
     [Range(0f, 1f)]
     public float imitationWeight = 0.7f;
+
     [Range(0f, 1f)]
     public float taskWeight = 0.3f;
-
-    [Header("Heading Smoothing")]
-    [Range(0f, 1f)]
-    public float headingLerp = 0.1f; 
-    private Vector3 ragdollHeading;  
-    private Vector3 referenceHeading;
 
 
 
@@ -139,12 +134,12 @@ public class DeepMimicAgent : Agent
         foreach (var bp in jd.bodyPartsList)
             bp.Reset();
 
+
         phase = Random.Range(0f, 1f);
 
+        Vector3 initHeading = GetCurrentHeading();
 
-        // Align Ragdoll and Reference Sampler Heading
-        Vector3 ragdollHeadingInit = GetHeading(hips);
-        Quaternion lookRot = Quaternion.LookRotation(ragdollHeadingInit, Vector3.up);
+        Quaternion lookRot = Quaternion.LookRotation(initHeading, Vector3.up);
         hips.rotation = Quaternion.Euler(0f, lookRot.eulerAngles.y, 0f);
 
         if (referenceSampler != null)
@@ -152,17 +147,9 @@ public class DeepMimicAgent : Agent
             referenceSampler.transform.position = referenceSamplerInitialPos;
             referenceSampler.transform.rotation = referenceSamplerInitialRot;
 
-            Vector3 refHeadingInit = GetHeading(referenceSampler.rootBone);
-            Quaternion refLookRot = Quaternion.LookRotation(refHeadingInit, Vector3.up);
+            Quaternion refLookRot = Quaternion.LookRotation(initHeading, Vector3.up);
             referenceSampler.transform.rotation = Quaternion.Euler(0f, refLookRot.eulerAngles.y, 0f);
         }
-
-
-        ragdollHeading = GetHeading(hips);
-        if (referenceSampler != null)
-            referenceHeading = GetHeading(referenceSampler.rootBone);
-        else
-            referenceHeading = ragdollHeading;
 
 
         InitializeToReferencePose(phase, true);
@@ -191,7 +178,7 @@ public class DeepMimicAgent : Agent
 
             if (setVelocities)
             {
-                Vector3 moveDir = GetHeading(hips);
+                Vector3 moveDir = GetCurrentHeading();
                 Vector3 velocityOffset = moveDir * desiredSpeed;
 
                 Vector3 worldLinVel = hips.TransformDirection(feat.linVel) + velocityOffset;
@@ -216,6 +203,8 @@ public class DeepMimicAgent : Agent
         Transform root = hips;
         Quaternion rootRot = root.rotation;
 
+
+        // Ragdoll Ovservations
         foreach (var bp in jd.bodyPartsList)
         {
             Vector3 relPos = root.InverseTransformPoint(bp.rb.position);
@@ -230,26 +219,16 @@ public class DeepMimicAgent : Agent
             sensor.AddObservation(angVel);
         }
 
+        // Phase Observation
         sensor.AddObservation(phase);
 
+        // Heading and Speed Observation
+        Vector3 headingWorld = GetCurrentHeading();
+        Vector3 headingLocal = hips.InverseTransformDirection(headingWorld);
+        headingLocal.y = 0f;
+        headingLocal.Normalize();
 
-        ragdollHeading = UpdateHeadingSmoothed(hips, ragdollHeading);
-        Vector3 headingWorld = ragdollHeading;
-        headingWorld.y = 0f;
-
-        if (headingWorld.sqrMagnitude > 1e-6f)
-        {
-            Vector3 headingLocal = hips.InverseTransformDirection(headingWorld);
-            headingLocal.y = 0f;
-            headingLocal.Normalize();
-            sensor.AddObservation(headingLocal);
-        }
-        else
-        {
-            sensor.AddObservation(Vector3.zero);
-        }
-
-        headingDirection = headingWorld;
+        sensor.AddObservation(headingLocal);
 
         sensor.AddObservation(desiredSpeed);
 
@@ -260,11 +239,9 @@ public class DeepMimicAgent : Agent
         // Apply Actions to Joints
         ApplyActionsToJoints(actions.ContinuousActions);
 
-
         // Sample Reference Features at Current Phase 
         ComputePhaseWindow(out float dtSim, out float phaseNow, out float phasePrev, out float deltaPhase);
         var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, dtSim, out Vector3 refComWorld);
-
 
         // Compute Reward 
         float imitationReward = ComputeTrackingReward(refFeatures, refComWorld);
@@ -272,12 +249,9 @@ public class DeepMimicAgent : Agent
         float totalReward = imitationWeight * imitationReward + taskWeight * taskReward;
         AddReward(totalReward);
 
-
         // Debug Updates
         UpdateEndEffectorTargetsDebug(refFeatures);
         UpdateCenterOfMassDebug(refComWorld);
-
-
 
         // Update Phase and Reference Sampler Position
         phase += deltaPhase;
@@ -286,8 +260,7 @@ public class DeepMimicAgent : Agent
 
         if (referenceSampler != null)
         {
-            referenceHeading = UpdateHeadingSmoothed(referenceSampler.rootBone, referenceHeading);
-            Vector3 moveDir = referenceHeading;
+            Vector3 moveDir = GetCurrentHeading();
 
             Vector3 pos = referenceSampler.transform.position;
             pos += moveDir * desiredSpeed * dtSim;
@@ -296,6 +269,7 @@ public class DeepMimicAgent : Agent
             Quaternion lookRot = Quaternion.LookRotation(moveDir, Vector3.up);
             referenceSampler.transform.rotation = Quaternion.Euler(0f, lookRot.eulerAngles.y, 0f);
         }
+
 
     }
     public override void Heuristic(in ActionBuffers actionsOut)
@@ -447,10 +421,7 @@ public class DeepMimicAgent : Agent
     }
     private float ComputeTargetHeadingReward()
     {
-        if (target == null)
-            return 0f;
-
-        Vector3 dStar = ragdollHeading;
+        Vector3 dStar = GetCurrentHeading();
         dStar.y = 0f;
 
         if (dStar.sqrMagnitude < 1e-6f)
@@ -510,47 +481,13 @@ public class DeepMimicAgent : Agent
         if (phasePrev < 0f)
             phasePrev += 1f;
     }
-    private Vector3 GetHeading(Transform root)
+    private Vector3 GetCurrentHeading()
     {
-        if (root == null)
+        if (headingController == null)
             return Vector3.forward;
 
-        if (target != null)
-        {
-            Vector3 toTarget = target.position - root.position;
-            toTarget.y = 0f;
-
-            if (toTarget.sqrMagnitude > 1e-6f)
-            {
-                return toTarget.normalized;
-            }
-        }
-
-        return Vector3.forward;
+        return headingController.Heading;
     }
-    private Vector3 UpdateHeadingSmoothed(Transform root, Vector3 currentHeading)
-    {
-        Vector3 desired = GetHeading(root);
-        desired.y = 0f;
-
-        if (desired.sqrMagnitude < 1e-6f)
-        {
-            if (currentHeading.sqrMagnitude < 1e-6f)
-                return Vector3.forward;
-
-            return currentHeading.normalized;
-        }
-
-        desired.Normalize();
-
-        if (currentHeading.sqrMagnitude < 1e-6f)
-            currentHeading = desired;
-
-        Vector3 result = Vector3.Slerp(currentHeading.normalized, desired, Mathf.Clamp01(headingLerp));
-        result.y = 0f;
-        return result.normalized;
-    }
-
 
 
     //--------------------------------------------------------------------------------------------------------------
@@ -619,7 +556,7 @@ public class DeepMimicAgent : Agent
         if (hips == null)
             return;
 
-        Vector3 heading = ragdollHeading;
+        Vector3 heading = GetCurrentHeading();
         heading.y = 0f;
 
         if (heading.sqrMagnitude < 1e-6f)
@@ -631,6 +568,8 @@ public class DeepMimicAgent : Agent
 
         Gizmos.color = Color.green;
         Gizmos.DrawLine(start, start + heading * 2f);
+
+        Gizmos.DrawSphere(start + heading * 2f, 0.05f);
     }
 
 }

@@ -77,6 +77,12 @@ public class DeepMimicAgent : Agent
     [Range(0f, 1f)]
     public float taskWeight = 0.3f;
 
+    [Header("Heading Smoothing")]
+    [Range(0f, 1f)]
+    public float headingLerp = 0.1f; 
+    private Vector3 ragdollHeading;  
+    private Vector3 referenceHeading;
+
 
 
     protected override void Awake()
@@ -137,20 +143,26 @@ public class DeepMimicAgent : Agent
 
 
         // Align Ragdoll and Reference Sampler Heading
-        Vector3 ragdollHeading = GetHeading(hips);
-        Quaternion lookRot = Quaternion.LookRotation(ragdollHeading, Vector3.up);
+        Vector3 ragdollHeadingInit = GetHeading(hips);
+        Quaternion lookRot = Quaternion.LookRotation(ragdollHeadingInit, Vector3.up);
         hips.rotation = Quaternion.Euler(0f, lookRot.eulerAngles.y, 0f);
-
 
         if (referenceSampler != null)
         {
             referenceSampler.transform.position = referenceSamplerInitialPos;
             referenceSampler.transform.rotation = referenceSamplerInitialRot;
 
-            Vector3 refHeading = GetHeading(referenceSampler.rootBone);
-            Quaternion refLookRot = Quaternion.LookRotation(refHeading, Vector3.up);
+            Vector3 refHeadingInit = GetHeading(referenceSampler.rootBone);
+            Quaternion refLookRot = Quaternion.LookRotation(refHeadingInit, Vector3.up);
             referenceSampler.transform.rotation = Quaternion.Euler(0f, refLookRot.eulerAngles.y, 0f);
         }
+
+
+        ragdollHeading = GetHeading(hips);
+        if (referenceSampler != null)
+            referenceHeading = GetHeading(referenceSampler.rootBone);
+        else
+            referenceHeading = ragdollHeading;
 
 
         InitializeToReferencePose(phase, true);
@@ -221,7 +233,8 @@ public class DeepMimicAgent : Agent
         sensor.AddObservation(phase);
 
 
-        Vector3 headingWorld = GetHeading(hips);
+        ragdollHeading = UpdateHeadingSmoothed(hips, ragdollHeading);
+        Vector3 headingWorld = ragdollHeading;
         headingWorld.y = 0f;
 
         if (headingWorld.sqrMagnitude > 1e-6f)
@@ -273,7 +286,8 @@ public class DeepMimicAgent : Agent
 
         if (referenceSampler != null)
         {
-            Vector3 moveDir = GetHeading(referenceSampler.rootBone);
+            referenceHeading = UpdateHeadingSmoothed(referenceSampler.rootBone, referenceHeading);
+            Vector3 moveDir = referenceHeading;
 
             Vector3 pos = referenceSampler.transform.position;
             pos += moveDir * desiredSpeed * dtSim;
@@ -436,7 +450,7 @@ public class DeepMimicAgent : Agent
         if (target == null)
             return 0f;
 
-        Vector3 dStar = GetHeading(hips);
+        Vector3 dStar = ragdollHeading;
         dStar.y = 0f;
 
         if (dStar.sqrMagnitude < 1e-6f)
@@ -514,7 +528,28 @@ public class DeepMimicAgent : Agent
 
         return Vector3.forward;
     }
+    private Vector3 UpdateHeadingSmoothed(Transform root, Vector3 currentHeading)
+    {
+        Vector3 desired = GetHeading(root);
+        desired.y = 0f;
 
+        if (desired.sqrMagnitude < 1e-6f)
+        {
+            if (currentHeading.sqrMagnitude < 1e-6f)
+                return Vector3.forward;
+
+            return currentHeading.normalized;
+        }
+
+        desired.Normalize();
+
+        if (currentHeading.sqrMagnitude < 1e-6f)
+            currentHeading = desired;
+
+        Vector3 result = Vector3.Slerp(currentHeading.normalized, desired, Mathf.Clamp01(headingLerp));
+        result.y = 0f;
+        return result.normalized;
+    }
 
 
 
@@ -575,5 +610,27 @@ public class DeepMimicAgent : Agent
         comRagdoll.position = ragdollComWorld;                        
     }
 
+
+    //--------------------------------------------------------------------------------------------------------------
+    // Gizmos
+    //--------------------------------------------------------------------------------------------------------------
+    private void OnDrawGizmos()
+    {
+        if (hips == null)
+            return;
+
+        Vector3 heading = ragdollHeading;
+        heading.y = 0f;
+
+        if (heading.sqrMagnitude < 1e-6f)
+            return;
+
+        heading.Normalize();
+
+        Vector3 start = hips.position + Vector3.up * 0.1f;
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawLine(start, start + heading * 2f);
+    }
 
 }

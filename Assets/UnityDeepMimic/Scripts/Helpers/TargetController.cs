@@ -99,10 +99,16 @@ public class TargetController : MonoBehaviour
 
     private void OnTriggerEnter(Collider col)
     {
-        if (col.CompareTag(tagToDetect))
+
+        if (col.transform.CompareTag(tagToDetect))
         {
             onTriggerEnterEvent.Invoke(col);
+            if (respawnIfTouched)
+            {
+                MoveTargetToRandomPosition();
+            }
         }
+
     }
 
     private void OnTriggerStay(Collider col)

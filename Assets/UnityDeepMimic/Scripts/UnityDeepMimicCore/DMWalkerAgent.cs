@@ -429,6 +429,49 @@ public class DeepMimicAgent : Agent
 
         dStar.Normalize();
 
+
+        var hipsBP = jd.bodyPartsDict[hips];
+        Vector3 v = hipsBP.rb.linearVelocity;
+        v.y = 0f;
+
+
+        Vector3 vTarget = dStar * desiredSpeed;
+        Vector3 vError = vTarget - v;
+
+
+        const float kVel = 1.5f;
+        float rSpeed = Mathf.Exp(-kVel * vError.sqrMagnitude);
+
+
+        float rDir = 0f;
+        if (v.sqrMagnitude > 1e-6f)
+        {
+            Vector3 vDir = v.normalized;
+            float cos = Vector3.Dot(vDir, dStar);    // 1 = perfekt, 0 = 90°, -1 = rückwärts
+            cos = Mathf.Clamp(cos, -1f, 1f);
+
+            // Mappe [-1,1] auf [0,1]
+            rDir = (cos + 1f) * 0.5f;
+        }
+
+
+        const float wSpeed = 0.5f;
+        const float wDir = 0.5f;
+
+        float rG = wSpeed * rSpeed + wDir * rDir;
+        return rG;
+
+
+
+        /*
+        Vector3 dStar = GetCurrentHeading();
+        dStar.y = 0f;
+
+        if (dStar.sqrMagnitude < 1e-6f)
+            return 0f;
+
+        dStar.Normalize();
+
         var hipsBP = jd.bodyPartsDict[hips];
         Vector3 v = hipsBP.rb.linearVelocity;
         v.y = 0f;
@@ -440,6 +483,7 @@ public class DeepMimicAgent : Agent
         float rG = Mathf.Exp(-2.5f * speedError * speedError);
 
         return rG;
+        */
     }
     private bool IsEndEffector(Transform t)
     {

@@ -45,6 +45,14 @@ public class DeepMimicAgent : Agent
     [Tooltip("Exponent for center-of-mass tracking. Default = 10.0 (corresponds to exp(-10 * comSq)).")]
     public float comExponent = 10f;
 
+    [Header("Heading Reward Parameters")]
+    [Tooltip("Exponent for the speed error term in the heading reward (exp(-kSpeed * error^2)).")]
+    public float kSpeed = 2.5f;
+
+    [Tooltip("Exponent for sideways and backward velocity penalty (exp(-kSide * error^2)).")]
+    public float kSide = 2.5f;
+
+
     [Header("End Effector Targets and Com (Debug Spheres)")]
     public Transform leftHandEndEffector; 
     public Transform rightHandEndEffector;  
@@ -421,46 +429,47 @@ public class DeepMimicAgent : Agent
     }
     private float ComputeTargetHeadingReward()
     {
+        // Target heading (horizontal direction)
         Vector3 dStar = GetCurrentHeading();
         dStar.y = 0f;
-
         if (dStar.sqrMagnitude < 1e-6f)
             return 0f;
-
         dStar.Normalize();
 
-
+        // Hip velocity on the ground plane
         var hipsBP = jd.bodyPartsDict[hips];
         Vector3 v = hipsBP.rb.linearVelocity;
         v.y = 0f;
 
+        // Forward and sideways components
+        float vForward = Vector3.Dot(v, dStar);
+        Vector3 vForwardVec = dStar * vForward;
+        Vector3 vSideVec = v - vForwardVec;
 
-        Vector3 vTarget = dStar * desiredSpeed;
-        Vector3 vError = vTarget - v;
+        // Forward-speed reward (only forward counts)
+        float vForwardClamped = Mathf.Max(0f, vForward);
+        float speedError = desiredSpeed - vForwardClamped;
+        float rSpeed = Mathf.Exp(-kSpeed * speedError * speedError);
 
+        // Penalize sideways + backward movement
+        float backwards = Mathf.Max(0f, -vForward);
+        float sideAndBack = vSideVec.magnitude + backwards;
+        float rSideTerm = Mathf.Exp(-kSide * sideAndBack * sideAndBack);
 
-        const float kVel = 1.5f;
-        float rSpeed = Mathf.Exp(-kVel * vError.sqrMagnitude);
+        // Multiplicative total reward
+        float rTotal = rSpeed * rSideTerm;
 
-
-        float rDir = 0f;
-        if (v.sqrMagnitude > 1e-6f)
+        if (Time.frameCount % 10 == 0)
         {
-            Vector3 vDir = v.normalized;
-            float cos = Vector3.Dot(vDir, dStar);    // 1 = perfekt, 0 = 90°, -1 = rückwärts
-            cos = Mathf.Clamp(cos, -1f, 1f);
-
-            // Mappe [-1,1] auf [0,1]
-            rDir = (cos + 1f) * 0.5f;
+            Debug.Log(
+                $"[HeadingReward] vForward: {vForward:F3}, vForwardClamped: {vForwardClamped:F3}, " +
+                $"speedError: {speedError:F3}, rSpeed: {rSpeed:F4}, " +
+                $"sideAndBack: {sideAndBack:F3}, rSide: {rSideTerm:F4}, " +
+                $"TOTAL: {rTotal:F4}"
+            );
         }
 
-
-        const float wSpeed = 0.5f;
-        const float wDir = 0.5f;
-
-        float rG = wSpeed * rSpeed + wDir * rDir;
-        return rG;
-
+        return rTotal;
 
 
         /*

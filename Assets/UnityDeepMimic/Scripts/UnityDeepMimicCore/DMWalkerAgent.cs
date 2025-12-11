@@ -52,6 +52,15 @@ public class DeepMimicAgent : Agent
     [Tooltip("Exponent for sideways and backward velocity penalty (exp(-kSide * error^2)).")]
     public float kSide = 2.5f;
 
+    [Header("Task Settings")]
+    public float desiredSpeed = 1.0f;
+
+    [Range(0f, 1f)]
+    public float imitationWeight = 0.7f;
+
+    [Range(0f, 1f)]
+    public float taskWeight = 0.3f;
+
 
     [Header("End Effector Targets and Com (Debug Spheres)")]
     public Transform leftHandEndEffector; 
@@ -77,14 +86,7 @@ public class DeepMimicAgent : Agent
     public HeadingController headingController;
 
 
-    [Header("Task Settings")]
-    public float desiredSpeed = 1.0f;
 
-    [Range(0f, 1f)]
-    public float imitationWeight = 0.7f;
-
-    [Range(0f, 1f)]
-    public float taskWeight = 0.3f;
 
 
 
@@ -457,7 +459,8 @@ public class DeepMimicAgent : Agent
         float rSideTerm = Mathf.Exp(-kSide * sideAndBack * sideAndBack);
 
         // Multiplicative total reward
-        float rTotal = rSpeed * rSideTerm;
+        //float rTotal = rSpeed * rSideTerm;
+        float rTotal = rSpeed + rSideTerm;
 
         if (Time.frameCount % 10 == 0)
         {

@@ -35,7 +35,7 @@ behaviors:
           memory: null
           goal_conditioning_type: hyper
           deterministic: false
-    init_path: null
+    init_path: results\Heading\DMWalker\checkpoint.pt
     keep_checkpoints: 5
     even_checkpoints: false
     max_steps: 40000000
@@ -62,15 +62,15 @@ engine_settings:
   time_scale: 20
   target_frame_rate: -1
   capture_frame_rate: 60
-  no_graphics: true
-  no_graphics_monitor: false
+  no_graphics: false
+  no_graphics_monitor: true
 environment_parameters: null
 checkpoint_settings:
   run_id: Heading3
-  initialize_from: null
+  initialize_from: Heading
   load_model: false
-  resume: true
-  force: false
+  resume: false
+  force: true
   train_model: false
   inference: false
   results_dir: results

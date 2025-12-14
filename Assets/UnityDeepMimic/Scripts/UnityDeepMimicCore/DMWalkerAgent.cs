@@ -53,7 +53,8 @@ public class DeepMimicAgent : Agent
     public float kSide = 2.5f;
 
     [Header("Task Settings")]
-    public float desiredSpeed = 1.0f;
+    public float baseDesiredSpeed = 0.6f;
+    public float desiredSpeed => baseDesiredSpeed * speedController.SpeedMultiplier;
 
     [Range(0f, 1f)]
     public float imitationWeight = 0.7f;
@@ -77,13 +78,15 @@ public class DeepMimicAgent : Agent
     private float[] smoothedActions;
 
     [Header("Phase Settings")]
-    public float phaseSpeed = 1f;
+    public float basePhaseSpeed = 3.3f;
+    private float phaseSpeed => basePhaseSpeed * speedController.SpeedMultiplier;
     private float phase;
 
     private DMJointDriveController jd;
     private DecisionRequester decisionRequester;
     public DirectionIndicator m_DirectionIndicator;
     public HeadingController headingController;
+    public SpeedController speedController;
 
 
 

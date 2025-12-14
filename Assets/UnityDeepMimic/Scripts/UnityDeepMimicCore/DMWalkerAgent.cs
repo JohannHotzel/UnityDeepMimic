@@ -84,7 +84,6 @@ public class DeepMimicAgent : Agent
 
     private DMJointDriveController jd;
     private DecisionRequester decisionRequester;
-    public DirectionIndicator m_DirectionIndicator;
     public HeadingController headingController;
     public SpeedController speedController;
 
@@ -108,7 +107,6 @@ public class DeepMimicAgent : Agent
     {
         jd = GetComponent<DMJointDriveController>();
         decisionRequester = GetComponent<DecisionRequester>();
-        m_DirectionIndicator = GetComponentInChildren<DirectionIndicator>();
 
         if (referenceSampler != null)
         {

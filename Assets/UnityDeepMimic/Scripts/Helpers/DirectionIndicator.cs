@@ -2,30 +2,39 @@ using UnityEngine;
 
 public class DirectionIndicator : MonoBehaviour
 {
+    [Header("References")]
+    [Tooltip("Usually the agent's hips transform")]
+    public Transform hips;
 
-    public bool updatedByAgent; //should this be updated by the agent? If not, it will use local settings
-    public Transform transformToFollow; //ex: hips or body
-    public Transform targetToLookAt; //target in the scene the indicator will point to
-    public float heightOffset;
+    [Tooltip("Heading controller providing the desired heading direction")]
+    public HeadingController headingController;
+
+    [Header("Visual Settings")]
+    public float heightOffset = 0.5f;
+
     private float m_StartingYPos;
 
-    void OnEnable()
+    private void OnEnable()
     {
         m_StartingYPos = transform.position.y;
     }
 
-    void Update()
+    private void Update()
     {
-        if (updatedByAgent)
+        if (hips == null || headingController == null)
             return;
-        transform.position = new Vector3(transformToFollow.position.x, m_StartingYPos + heightOffset,
-            transformToFollow.position.z);
-        Vector3 walkDir = targetToLookAt.position - transform.position;
-        walkDir.y = 0; //flatten dir on the y
-        transform.rotation = Quaternion.LookRotation(walkDir);
+
+        transform.position = new Vector3(hips.position.x, m_StartingYPos + heightOffset, hips.position.z);
+
+        Vector3 heading = headingController.Heading;
+        heading.y = 0f;
+
+        if (heading.sqrMagnitude < 1e-6f)
+            return;
+
+        transform.rotation = Quaternion.LookRotation(heading, Vector3.up);
     }
 
-    //Public method to allow an agent to directly update this component
     public void MatchOrientation(Transform t)
     {
         transform.position = new Vector3(t.position.x, m_StartingYPos + heightOffset, t.position.z);

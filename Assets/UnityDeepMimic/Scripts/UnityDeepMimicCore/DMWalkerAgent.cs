@@ -459,9 +459,8 @@ public class DeepMimicAgent : Agent
         float sideAndBack = vSideVec.magnitude + backwards;
         float rSideTerm = Mathf.Exp(-kSide * sideAndBack * sideAndBack);
 
-        // Multiplicative total reward
-        //float rTotal = rSpeed * rSideTerm;
-        float rTotal = rSpeed + rSideTerm;
+        //float rTotal = rSpeed * rSideTerm [0, 2];
+        float rTotal = (rSpeed + rSideTerm) * 0.5f; // [0, 1]
 
         if (Time.frameCount % 10 == 0)
         {
@@ -475,28 +474,6 @@ public class DeepMimicAgent : Agent
 
         return rTotal;
 
-
-        /*
-        Vector3 dStar = GetCurrentHeading();
-        dStar.y = 0f;
-
-        if (dStar.sqrMagnitude < 1e-6f)
-            return 0f;
-
-        dStar.Normalize();
-
-        var hipsBP = jd.bodyPartsDict[hips];
-        Vector3 v = hipsBP.rb.linearVelocity;
-        v.y = 0f;
-
-        float vParallel = Vector3.Dot(v, dStar);
-        float vStar = desiredSpeed;
-
-        float speedError = Mathf.Max(0f, vStar - vParallel);
-        float rG = Mathf.Exp(-2.5f * speedError * speedError);
-
-        return rG;
-        */
     }
     private bool IsEndEffector(Transform t)
     {
@@ -605,28 +582,6 @@ public class DeepMimicAgent : Agent
     }
 
 
-    //--------------------------------------------------------------------------------------------------------------
-    // Gizmos
-    //--------------------------------------------------------------------------------------------------------------
-    private void OnDrawGizmos()
-    {
-        if (hips == null)
-            return;
 
-        Vector3 heading = GetCurrentHeading();
-        heading.y = 0f;
-
-        if (heading.sqrMagnitude < 1e-6f)
-            return;
-
-        heading.Normalize();
-
-        Vector3 start = hips.position + Vector3.up * 0.1f;
-
-        Gizmos.color = Color.green;
-        Gizmos.DrawLine(start, start + heading * 2f);
-
-        Gizmos.DrawSphere(start + heading * 2f, 0.05f);
-    }
 
 }

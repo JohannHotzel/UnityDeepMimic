@@ -1,0 +1,38 @@
+{
+    "DMWalker": {
+        "checkpoints": [
+            {
+                "steps": 12396,
+                "file_path": "results\\Heading1\\DMWalker\\DMWalker-12396.onnx",
+                "reward": null,
+                "creation_time": 1765822217.7075703,
+                "auxillary_file_paths": [
+                    "results\\Heading1\\DMWalker\\DMWalker-12396.pt"
+                ]
+            },
+            {
+                "steps": 446273,
+                "file_path": "results\\Heading1\\DMWalker\\DMWalker-446273.onnx",
+                "reward": 118.72853961357704,
+                "creation_time": 1765822527.3998728,
+                "auxillary_file_paths": [
+                    "results\\Heading1\\DMWalker\\DMWalker-446273.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 446273,
+            "file_path": "results\\Heading1\\DMWalker.onnx",
+            "reward": 118.72853961357704,
+            "creation_time": 1765822527.3998728,
+            "auxillary_file_paths": [
+                "results\\Heading1\\DMWalker\\DMWalker-446273.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.2.0.dev0",
+        "torch_version": "2.2.2+cu121"
+    }
+}

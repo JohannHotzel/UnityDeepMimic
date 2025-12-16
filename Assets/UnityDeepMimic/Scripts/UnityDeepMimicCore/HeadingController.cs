@@ -1,7 +1,5 @@
 using UnityEngine;
 
-using UnityEngine;
-
 public class HeadingController : MonoBehaviour
 {
     [Header("Random Rotation Settings")]

@@ -86,6 +86,7 @@ public class DeepMimicAgent : Agent
     private DecisionRequester decisionRequester;
     public HeadingController headingController;
     public SpeedController speedController;
+    public SensorRigTransformer sensorRig;
 
 
 
@@ -211,6 +212,8 @@ public class DeepMimicAgent : Agent
     }
     public override void CollectObservations(VectorSensor sensor)
     {
+        sensorRig.SyncNow();
+
         Transform root = hips;
         Quaternion rootRot = root.rotation;
 
@@ -233,16 +236,26 @@ public class DeepMimicAgent : Agent
         // Phase Observation
         sensor.AddObservation(phase);
 
+        // Desired Speed Observation
+        sensor.AddObservation(desiredSpeed);
+
+        // Heading Error, Hip Velocity, Foot Contact Observations
+        AddHeadingErrorObservations(sensor);
+        AddHipVelocityObservations(sensor);
+        AddFootContactObservations(sensor);
+
+
+        /*
         // Heading and Speed Observation
         Vector3 headingWorld = GetCurrentHeading();
         Vector3 headingLocal = hips.InverseTransformDirection(headingWorld);
         headingLocal.y = 0f;
         headingLocal.Normalize();
 
+        // Desired Speed and Heading
         sensor.AddObservation(headingLocal);
-
         sensor.AddObservation(desiredSpeed);
-
+        */
 
     }
     public override void OnActionReceived(ActionBuffers actions)
@@ -286,6 +299,53 @@ public class DeepMimicAgent : Agent
     public override void Heuristic(in ActionBuffers actionsOut)
     {
 
+    }
+
+
+    //--------------------------------------------------------------------------------------------------------------
+    // Observation Computation
+    //--------------------------------------------------------------------------------------------------------------
+    private void AddHeadingErrorObservations(VectorSensor sensor)
+    {
+        // Desired heading (world)
+        Vector3 desired = GetCurrentHeading();
+        desired.y = 0f;
+        if (desired.sqrMagnitude < 1e-6f) desired = Vector3.forward;
+        desired.Normalize();
+
+        // Actual heading = hips forward (world)
+        Vector3 actual = hips.forward;
+        actual.y = 0f;
+        if (actual.sqrMagnitude < 1e-6f) actual = Vector3.forward;
+        actual.Normalize();
+
+
+        float headingAlign = Vector3.Dot(actual, desired);
+
+        Vector3 c = Vector3.Cross(actual, desired);
+        float headingSigned = Mathf.Sign(c.y) * Mathf.Clamp01(c.magnitude);
+
+        sensor.AddObservation(headingAlign);
+        sensor.AddObservation(headingSigned);
+    }
+    private void AddHipVelocityObservations(VectorSensor sensor)
+    {
+        var hipsBP = jd.bodyPartsDict[hips];
+        Vector3 vWorld = hipsBP.rb.linearVelocity;
+
+        // In hips-local space
+        Vector3 vLocal = hips.InverseTransformDirection(vWorld);
+
+        sensor.AddObservation(vLocal);           // 3 floats
+        sensor.AddObservation(vLocal.magnitude); // 1 float
+    }
+    private void AddFootContactObservations(VectorSensor sensor)
+    {
+        var l = jd.bodyPartsDict[footL].groundContact != null && jd.bodyPartsDict[footL].groundContact.touchingGround;
+        var r = jd.bodyPartsDict[footR].groundContact != null && jd.bodyPartsDict[footR].groundContact.touchingGround;
+
+        sensor.AddObservation(l ? 1f : 0f);
+        sensor.AddObservation(r ? 1f : 0f);
     }
 
 

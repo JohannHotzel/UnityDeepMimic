@@ -8301,9 +8301,9 @@ MonoBehaviour:
   comExponent: 5
   kSpeed: 2.5
   kSide: 2.5
-  baseDesiredSpeed: 0
-  imitationWeight: 0.6
-  taskWeight: 0.3
+  baseDesiredSpeed: 3
+  imitationWeight: 1
+  taskWeight: 0
   leftHandEndEffector: {fileID: 1892512760530105404}
   rightHandEndEffector: {fileID: 4546989308074529918}
   leftFootEndEffector: {fileID: 5684561348815433311}

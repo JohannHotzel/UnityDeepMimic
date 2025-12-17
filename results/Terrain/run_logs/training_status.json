@@ -1,0 +1,65 @@
+{
+    "DMWalker": {
+        "checkpoints": [
+            {
+                "steps": 58499965,
+                "file_path": "results\\Terrain\\DMWalker\\DMWalker-58499965.onnx",
+                "reward": 216.39700857798258,
+                "creation_time": 1765952904.906787,
+                "auxillary_file_paths": [
+                    "results\\Terrain\\DMWalker\\DMWalker-58499965.pt"
+                ]
+            },
+            {
+                "steps": 58999981,
+                "file_path": "results\\Terrain\\DMWalker\\DMWalker-58999981.onnx",
+                "reward": 218.01368339739594,
+                "creation_time": 1765953113.6997359,
+                "auxillary_file_paths": [
+                    "results\\Terrain\\DMWalker\\DMWalker-58999981.pt"
+                ]
+            },
+            {
+                "steps": 59499975,
+                "file_path": "results\\Terrain\\DMWalker\\DMWalker-59499975.onnx",
+                "reward": 244.14113420248032,
+                "creation_time": 1765953328.5140653,
+                "auxillary_file_paths": [
+                    "results\\Terrain\\DMWalker\\DMWalker-59499975.pt"
+                ]
+            },
+            {
+                "steps": 59999920,
+                "file_path": "results\\Terrain\\DMWalker\\DMWalker-59999920.onnx",
+                "reward": 225.44190749358123,
+                "creation_time": 1765953538.1449206,
+                "auxillary_file_paths": [
+                    "results\\Terrain\\DMWalker\\DMWalker-59999920.pt"
+                ]
+            },
+            {
+                "steps": 60000176,
+                "file_path": "results\\Terrain\\DMWalker\\DMWalker-60000176.onnx",
+                "reward": 225.44190749358123,
+                "creation_time": 1765953538.243173,
+                "auxillary_file_paths": [
+                    "results\\Terrain\\DMWalker\\DMWalker-60000176.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 60000176,
+            "file_path": "results\\Terrain\\DMWalker.onnx",
+            "reward": 225.44190749358123,
+            "creation_time": 1765953538.243173,
+            "auxillary_file_paths": [
+                "results\\Terrain\\DMWalker\\DMWalker-60000176.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.2.0.dev0",
+        "torch_version": "2.2.2+cu121"
+    }
+}

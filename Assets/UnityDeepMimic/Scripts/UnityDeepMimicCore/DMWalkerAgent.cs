@@ -28,8 +28,6 @@ public class DeepMimicAgent : Agent
 
     [Header("Reference Motion")]
     public ReferenceMotionSampler referenceSampler;
-    private Vector3 referenceSamplerInitialPos;
-    private Quaternion referenceSamplerInitialRot;
 
 
     [Header("Reward Exponents")]
@@ -83,12 +81,9 @@ public class DeepMimicAgent : Agent
     private float phase;
 
     private DMJointDriveController jd;
-    private DecisionRequester decisionRequester;
     public HeadingController headingController;
     public SpeedController speedController;
     public SensorRigTransformer sensorRig;
-
-
 
 
 
@@ -107,13 +102,10 @@ public class DeepMimicAgent : Agent
     public override void Initialize()
     {
         jd = GetComponent<DMJointDriveController>();
-        decisionRequester = GetComponent<DecisionRequester>();
 
         if (referenceSampler != null)
-        {
-            referenceSamplerInitialPos = referenceSampler.transform.position;
-            referenceSamplerInitialRot = referenceSampler.transform.rotation;
-        }
+            referenceSampler.alignToHips = hips;
+       
 
         // Setup body parts
         jd.SetupBodyPart(hips);
@@ -146,31 +138,21 @@ public class DeepMimicAgent : Agent
         foreach (var bp in jd.bodyPartsList)
             bp.Reset();
 
-
         phase = Random.Range(0f, 1f);
 
         Vector3 initHeading = GetCurrentHeading();
-
         Quaternion lookRot = Quaternion.LookRotation(initHeading, Vector3.up);
         hips.rotation = Quaternion.Euler(0f, lookRot.eulerAngles.y, 0f);
-
-        if (referenceSampler != null)
-        {
-            referenceSampler.transform.position = referenceSamplerInitialPos;
-            referenceSampler.transform.rotation = referenceSamplerInitialRot;
-
-            Quaternion refLookRot = Quaternion.LookRotation(initHeading, Vector3.up);
-            referenceSampler.transform.rotation = Quaternion.Euler(0f, refLookRot.eulerAngles.y, 0f);
-        }
-
-
-        InitializeToReferencePose(phase, true);
+   
+        InitializeToReferencePose(true);
     }
-    private void InitializeToReferencePose(float phase, bool setVelocities)
+    private void InitializeToReferencePose(bool setVelocities)
     {
 
         if (referenceSampler == null)
             return;
+
+        referenceSampler.alignHeading = GetCurrentHeading();
 
         ComputePhaseWindow(out float dtSim, out float phaseNow, out float phasePrev, out float deltaPhase);
         var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, dtSim, out Vector3 refComWorld);
@@ -264,6 +246,9 @@ public class DeepMimicAgent : Agent
         ApplyActionsToJoints(actions.ContinuousActions);
 
         // Sample Reference Features at Current Phase 
+        if (referenceSampler != null)
+            referenceSampler.alignHeading = GetCurrentHeading();
+
         ComputePhaseWindow(out float dtSim, out float phaseNow, out float phasePrev, out float deltaPhase);
         var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, dtSim, out Vector3 refComWorld);
 
@@ -281,19 +266,6 @@ public class DeepMimicAgent : Agent
         phase += deltaPhase;
         if (phase >= 1f)
             phase -= 1f;
-
-        if (referenceSampler != null)
-        {
-            Vector3 moveDir = GetCurrentHeading();
-
-            Vector3 pos = referenceSampler.transform.position;
-            pos += moveDir * desiredSpeed * dtSim;
-            referenceSampler.transform.position = pos;
-
-            Quaternion lookRot = Quaternion.LookRotation(moveDir, Vector3.up);
-            referenceSampler.transform.rotation = Quaternion.Euler(0f, lookRot.eulerAngles.y, 0f);
-        }
-
 
     }
     public override void Heuristic(in ActionBuffers actionsOut)

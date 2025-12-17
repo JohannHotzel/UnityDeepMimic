@@ -21,6 +21,10 @@ public class ReferenceMotionSampler : MonoBehaviour
     private Vector3 lastComWorld;
 
 
+    [Header("Alignment (optional)")]
+    public Transform alignToHips;                
+    public Vector3 alignHeading = Vector3.forward;
+
     public struct BoneFeatures
     {
         public Vector3 localPos;
@@ -41,72 +45,6 @@ public class ReferenceMotionSampler : MonoBehaviour
         }
     }
 
-    public List<BoneFeatures> SampleAndExtract(float phase, out Vector3 comWorld)
-    {
-        comWorld = Vector3.zero;
-
-        // Validate inputs
-        if (clip == null || animator == null || rootBone == null || bones.Count == 0 || sampleRateHz <= 0f)
-            return currentFeatures;
-
-        int totalFrames = TotalFrames;
-        if (totalFrames <= 1)
-            return currentFeatures;
-
-        EnsureBuffers();
-
-
-        float phiNow = Mathf.Repeat(phase, 1f); // phi in [0,1]
-
-        float dt = 1f / sampleRateHz;
-        float deltaPhi = dt / clip.length;
-
-        float phiPrev = phiNow - deltaPhi;
-        if (phiPrev < 0f) // cycle back
-            phiPrev += 1f;
-
-        SamplePoseAtPhase(phiPrev);
-        for (int i = 0; i < bones.Count; i++)
-        {
-            Transform b = bones[i];
-            prevPositions[i] = b.position;
-            prevRotations[i] = b.rotation;
-        }
-
-
-        SamplePoseAtPhase(phiNow);
-
-        Vector3 comWorldNow = ComputeCenterOfMassWorld();
-        comWorld = comWorldNow;
-        lastComWorld = comWorldNow;
-
-
-        currentFeatures.Clear();
-
-        for (int i = 0; i < bones.Count; i++)
-        {
-            Transform bone = bones[i];
-            BoneFeatures f = new BoneFeatures();
-
-            f.localPos = rootBone.InverseTransformPoint(bone.position);
-            f.worldPos = bone.position;
-            f.localRot = Quaternion.Inverse(rootBone.rotation) * bone.rotation;
-
-            Vector3 prevPos = prevPositions[i];
-            Quaternion prevRot = prevRotations[i];
-
-            Vector3 worldLinVel = (bone.position - prevPos) / dt;
-            Vector3 worldAngVel = ComputeAngularVelocity(prevRot, bone.rotation, dt);
-
-            f.linVel = rootBone.InverseTransformDirection(worldLinVel);
-            f.angVel = rootBone.InverseTransformDirection(worldAngVel);
-
-            currentFeatures.Add(f);
-        }
-
-
-        return currentFeatures;
-    }
     public List<BoneFeatures> SampleAndExtractPhases(float phaseNow, float phasePrev, float deltaTime, out Vector3 comWorld)
     {
         comWorld = Vector3.zero;
@@ -123,6 +61,7 @@ public class ReferenceMotionSampler : MonoBehaviour
         // 1) Sample the pose at the previous phase and store bone transforms
         // ------------------------------------------
         SamplePoseAtPhase(phiPrev);
+        AlignRootBoneToTarget();
         for (int i = 0; i < bones.Count; i++)
         {
             prevPositions[i] = bones[i].position;
@@ -133,6 +72,7 @@ public class ReferenceMotionSampler : MonoBehaviour
         // 2) Sample the pose at the current phase
         // ------------------------------------------
         SamplePoseAtPhase(phiNow);
+        AlignRootBoneToTarget();
 
         Vector3 comWorldNow = ComputeCenterOfMassWorld();
         comWorld = comWorldNow;                                                 
@@ -180,8 +120,31 @@ public class ReferenceMotionSampler : MonoBehaviour
 
         return currentFeatures;
     }
+    private void AlignRootBoneToTarget()
+    {
+        if (alignToHips == null || rootBone == null) return;
 
+        // Heading -> yaw only
+        Vector3 h = alignHeading;
+        h.y = 0f;
+        if (h.sqrMagnitude < 1e-6f) h = Vector3.forward;
+        h.Normalize();
 
+        Quaternion yaw = Quaternion.Euler(
+            0f,
+            Quaternion.LookRotation(h, Vector3.up).eulerAngles.y,
+            0f
+        );
+
+        // Rotate whole sampler rig
+        transform.rotation = yaw;
+
+        // Shift whole sampler rig so that rootBone sits exactly on agent hips
+        Vector3 delta = alignToHips.position - rootBone.position;
+        transform.position += delta;
+    }
+
+   
     private void EnsureBuffers()
     {
         if (prevPositions == null || prevPositions.Length != bones.Count)
@@ -240,5 +203,86 @@ public class ReferenceMotionSampler : MonoBehaviour
         Gizmos.color = Color.cyan;
         Gizmos.DrawSphere(comWorld, 0.03f);
     }
+
+
+
+
+
+
+
+
+
+
+
+    //Deprecated: use SampleAndExtractPhases instead
+    public List<BoneFeatures> SampleAndExtract(float phase, out Vector3 comWorld)
+    {
+        comWorld = Vector3.zero;
+
+        // Validate inputs
+        if (clip == null || animator == null || rootBone == null || bones.Count == 0 || sampleRateHz <= 0f)
+            return currentFeatures;
+
+        int totalFrames = TotalFrames;
+        if (totalFrames <= 1)
+            return currentFeatures;
+
+        EnsureBuffers();
+
+
+        float phiNow = Mathf.Repeat(phase, 1f); // phi in [0,1]
+
+        float dt = 1f / sampleRateHz;
+        float deltaPhi = dt / clip.length;
+
+        float phiPrev = phiNow - deltaPhi;
+        if (phiPrev < 0f) // cycle back
+            phiPrev += 1f;
+
+        SamplePoseAtPhase(phiPrev);
+        AlignRootBoneToTarget();
+        for (int i = 0; i < bones.Count; i++)
+        {
+            Transform b = bones[i];
+            prevPositions[i] = b.position;
+            prevRotations[i] = b.rotation;
+        }
+
+
+        SamplePoseAtPhase(phiNow);
+        AlignRootBoneToTarget();
+
+        Vector3 comWorldNow = ComputeCenterOfMassWorld();
+        comWorld = comWorldNow;
+        lastComWorld = comWorldNow;
+
+
+        currentFeatures.Clear();
+
+        for (int i = 0; i < bones.Count; i++)
+        {
+            Transform bone = bones[i];
+            BoneFeatures f = new BoneFeatures();
+
+            f.localPos = rootBone.InverseTransformPoint(bone.position);
+            f.worldPos = bone.position;
+            f.localRot = Quaternion.Inverse(rootBone.rotation) * bone.rotation;
+
+            Vector3 prevPos = prevPositions[i];
+            Quaternion prevRot = prevRotations[i];
+
+            Vector3 worldLinVel = (bone.position - prevPos) / dt;
+            Vector3 worldAngVel = ComputeAngularVelocity(prevRot, bone.rotation, dt);
+
+            f.linVel = rootBone.InverseTransformDirection(worldLinVel);
+            f.angVel = rootBone.InverseTransformDirection(worldAngVel);
+
+            currentFeatures.Add(f);
+        }
+
+
+        return currentFeatures;
+    }
+
 
 }

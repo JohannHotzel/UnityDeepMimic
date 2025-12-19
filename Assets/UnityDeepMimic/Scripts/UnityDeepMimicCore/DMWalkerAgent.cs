@@ -152,7 +152,7 @@ public class DeepMimicAgent : Agent
         if (referenceSampler == null)
             return;
 
-        referenceSampler.alignHeading = GetCurrentHeading();
+        referenceSampler.alignHeading = GetRagdollHipsHeadingYaw();
 
         ComputePhaseWindow(out float dtSim, out float phaseNow, out float phasePrev, out float deltaPhase);
         var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, dtSim, out Vector3 refComWorld);
@@ -247,7 +247,7 @@ public class DeepMimicAgent : Agent
 
         // Sample Reference Features at Current Phase 
         if (referenceSampler != null)
-            referenceSampler.alignHeading = GetCurrentHeading();
+            referenceSampler.alignHeading = GetRagdollHipsHeadingYaw();
 
         ComputePhaseWindow(out float dtSim, out float phaseNow, out float phasePrev, out float deltaPhase);
         var refFeatures = referenceSampler.SampleAndExtractPhases(phaseNow, phasePrev, dtSim, out Vector3 refComWorld);
@@ -437,7 +437,8 @@ public class DeepMimicAgent : Agent
         const float w_p = 0.65f; // pose
         const float w_v = 0.10f; // velocity
         const float w_e = 0.15f; // end-effector
-        const float w_c = 0.10f; // center of mass
+       // const float w_c = 0.10f; // center of mass
+        const float w_c = 0.00f; // center of mass
 
         float imitationReward =
             w_p * rPose +
@@ -553,6 +554,17 @@ public class DeepMimicAgent : Agent
             return Vector3.forward;
 
         return headingController.Heading;
+    }
+    private Vector3 GetRagdollHipsHeadingYaw()
+    {
+        // Forward of hip in XZ Plane (Yaw)
+        Vector3 fwd = hips.forward;
+        fwd.y = 0f;
+
+        if (fwd.sqrMagnitude < 1e-6f)
+            return Vector3.forward;
+
+        return fwd.normalized;
     }
 
 

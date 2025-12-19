@@ -2831,7 +2831,7 @@ ConfigurableJoint:
     spring: 0
     damper: 0
   m_LowAngularXLimit:
-    limit: -70
+    limit: -90
     bounciness: 0
     contactDistance: 0
   m_HighAngularXLimit:
@@ -2842,7 +2842,7 @@ ConfigurableJoint:
     spring: 0
     damper: 0
   m_AngularYLimit:
-    limit: 120
+    limit: 130
     bounciness: 0
     contactDistance: 0
   m_AngularZLimit:
@@ -5631,7 +5631,7 @@ ConfigurableJoint:
     spring: 0
     damper: 0
   m_LowAngularXLimit:
-    limit: -70
+    limit: -90
     bounciness: 0
     contactDistance: 0
   m_HighAngularXLimit:
@@ -5642,7 +5642,7 @@ ConfigurableJoint:
     spring: 0
     damper: 0
   m_AngularYLimit:
-    limit: 120
+    limit: 130
     bounciness: 0
     contactDistance: 0
   m_AngularZLimit:

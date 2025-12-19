@@ -1,0 +1,65 @@
+{
+    "DMWalker": {
+        "checkpoints": [
+            {
+                "steps": 58499952,
+                "file_path": "results\\Shooting\\DMWalker\\DMWalker-58499952.onnx",
+                "reward": 182.70462731411962,
+                "creation_time": 1766045662.1090968,
+                "auxillary_file_paths": [
+                    "results\\Shooting\\DMWalker\\DMWalker-58499952.pt"
+                ]
+            },
+            {
+                "steps": 58999849,
+                "file_path": "results\\Shooting\\DMWalker\\DMWalker-58999849.onnx",
+                "reward": 192.5807369252046,
+                "creation_time": 1766045886.9601173,
+                "auxillary_file_paths": [
+                    "results\\Shooting\\DMWalker\\DMWalker-58999849.pt"
+                ]
+            },
+            {
+                "steps": 59499999,
+                "file_path": "results\\Shooting\\DMWalker\\DMWalker-59499999.onnx",
+                "reward": 232.7650629156514,
+                "creation_time": 1766046110.9293191,
+                "auxillary_file_paths": [
+                    "results\\Shooting\\DMWalker\\DMWalker-59499999.pt"
+                ]
+            },
+            {
+                "steps": 59999944,
+                "file_path": "results\\Shooting\\DMWalker\\DMWalker-59999944.onnx",
+                "reward": 196.18729741490165,
+                "creation_time": 1766046329.3767633,
+                "auxillary_file_paths": [
+                    "results\\Shooting\\DMWalker\\DMWalker-59999944.pt"
+                ]
+            },
+            {
+                "steps": 60000200,
+                "file_path": "results\\Shooting\\DMWalker\\DMWalker-60000200.onnx",
+                "reward": 196.18729741490165,
+                "creation_time": 1766046329.485669,
+                "auxillary_file_paths": [
+                    "results\\Shooting\\DMWalker\\DMWalker-60000200.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 60000200,
+            "file_path": "results\\Shooting\\DMWalker.onnx",
+            "reward": 196.18729741490165,
+            "creation_time": 1766046329.485669,
+            "auxillary_file_paths": [
+                "results\\Shooting\\DMWalker\\DMWalker-60000200.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.2.0.dev0",
+        "torch_version": "2.2.2+cu121"
+    }
+}

@@ -125,6 +125,7 @@ public class DeepMimicAgent : Agent
         jd.SetupBodyPart(forearmR);
         jd.SetupBodyPart(handR);
 
+        /*
         foreach (var bp in jd.bodyPartsList)
         {
             if (bp.joint)
@@ -132,6 +133,7 @@ public class DeepMimicAgent : Agent
                 bp.SetJointStrengthConstant(1.0f);
             }
         }
+        */
     }
     public override void OnEpisodeBegin()
     {
@@ -366,6 +368,26 @@ public class DeepMimicAgent : Agent
         bp[forearmR].SetJointTargetRotationLocal(smoothedActions[++i], 0, 0);
 
         bp[head].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
+
+
+
+        // --- Strength actions ---
+        bp[chest].SetJointStrength(smoothedActions[++i]);
+        bp[spine].SetJointStrength(smoothedActions[++i]);
+        bp[head].SetJointStrength(smoothedActions[++i]);
+
+        bp[thighL].SetJointStrength(smoothedActions[++i]);
+        bp[shinL].SetJointStrength(smoothedActions[++i]);
+        bp[footL].SetJointStrength(smoothedActions[++i]);
+
+        bp[thighR].SetJointStrength(smoothedActions[++i]);
+        bp[shinR].SetJointStrength(smoothedActions[++i]);
+        bp[footR].SetJointStrength(smoothedActions[++i]);
+
+        bp[armL].SetJointStrength(smoothedActions[++i]);
+        bp[forearmL].SetJointStrength(smoothedActions[++i]);
+        bp[armR].SetJointStrength(smoothedActions[++i]);
+        bp[forearmR].SetJointStrength(smoothedActions[++i]);
     }
 
     private float ComputeTrackingReward(List<ReferenceMotionSampler.BoneFeatures> refFeatures, Vector3 refComWorld)

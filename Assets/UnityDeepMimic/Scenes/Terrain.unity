@@ -616,7 +616,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   target: {fileID: 580454147}
-  offset: {x: -6, y: 2, z: 6}
+  offset: {x: -6, y: 2, z: 10}
   smoothSpeed: 5
 --- !u!1001 &1096034597
 PrefabInstance:

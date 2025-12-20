@@ -260,6 +260,8 @@ public class DeepMimicAgent : Agent
         float totalReward = imitationWeight * imitationReward + taskWeight * taskReward;
         AddReward(totalReward);
 
+        //ApplyTorquePenalty();
+
         // Debug Updates
         UpdateEndEffectorTargetsDebug(refFeatures);
         UpdateCenterOfMassDebug(refComWorld);
@@ -469,14 +471,14 @@ public class DeepMimicAgent : Agent
             w_c * rCom;
 
 
-        if (Time.frameCount % 10 == 0)  // nur alle 10 Frames loggen
+        if (Time.frameCount % 10 == 0)
         {
             Debug.Log(
-                $"Reward Breakdown:\n" +
-                $"sumRotSq: {sumRotSq:F4}, rPose: {rPose:F4}\n" +
-                $"sumVelSq: {sumVelSq:F4}, rVel: {rVel:F4}\n" +
-                $"sumEndSq: {sumEndSq:F4}, rEnd: {rEnd:F4}\n" +
-                $"comSq: {comSq:F4}, rCom: {rCom:F4}\n" +
+                $"[ImitationReward]\n" +
+                $"sumRotSq: {sumRotSq:F4} | rPose: {rPose:F4}\n" +
+                $"sumVelSq: {sumVelSq:F4} | rVel:  {rVel:F4}\n" +
+                $"sumEndSq: {sumEndSq:F4} | rEnd:  {rEnd:F4}\n" +
+                $"comSq:    {comSq:F4} | rCom:  {rCom:F4}\n" +
                 $"TOTAL imitationReward: {imitationReward:F4}"
             );
         }
@@ -554,6 +556,39 @@ public class DeepMimicAgent : Agent
 
         return accum / totalMass;                                        
     }
+    private void ApplyTorquePenalty()
+    {
+        jd.GetCurrentJointForces();
+
+        float torqueCost = 0f;
+        int n = 0;
+
+        foreach (var part in jd.bodyPartsList)
+        {
+            if (part.joint == null)
+                continue;
+
+            torqueCost += part.currentJointTorqueSqrMag;
+            n++;
+        }
+
+        if (n > 0)
+            torqueCost /= n;
+
+        float penalty = -0.00001f * torqueCost;
+        AddReward(penalty);
+
+        if (Time.frameCount % 10 == 0)
+        {
+            Debug.Log(
+                $"[TorquePenalty]\n" +
+                $"avgTorqueSqr: {torqueCost:F4}\n" +
+                $"penaltyApplied: {penalty:F6}"
+            );
+        }
+    }
+
+
 
 
     //--------------------------------------------------------------------------------------------------------------

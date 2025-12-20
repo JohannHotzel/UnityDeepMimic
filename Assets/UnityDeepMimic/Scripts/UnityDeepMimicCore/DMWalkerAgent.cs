@@ -10,8 +10,9 @@ public class DeepMimicAgent : Agent
 {
     [Header("Body Parts")]
     public Transform hips;
-    public Transform chest;
     public Transform spine;
+    public Transform spine1;
+    public Transform spine2;
     public Transform head;
     public Transform thighL;
     public Transform shinL;
@@ -19,9 +20,11 @@ public class DeepMimicAgent : Agent
     public Transform thighR;
     public Transform shinR;
     public Transform footR;
+    public Transform shoulderL;
     public Transform armL;
     public Transform forearmL;
     public Transform handL;
+    public Transform shoulderR;
     public Transform armR;
     public Transform forearmR;
     public Transform handR;
@@ -109,18 +112,25 @@ public class DeepMimicAgent : Agent
 
         // Setup body parts
         jd.SetupBodyPart(hips);
-        jd.SetupBodyPart(chest);
         jd.SetupBodyPart(spine);
+        jd.SetupBodyPart(spine1);
+        jd.SetupBodyPart(spine2);
         jd.SetupBodyPart(head);
+
         jd.SetupBodyPart(thighL);
         jd.SetupBodyPart(shinL);
         jd.SetupBodyPart(footL);
+
         jd.SetupBodyPart(thighR);
         jd.SetupBodyPart(shinR);
         jd.SetupBodyPart(footR);
+
+        jd.SetupBodyPart(shoulderL);
         jd.SetupBodyPart(armL);
         jd.SetupBodyPart(forearmL);
         jd.SetupBodyPart(handL);
+
+        jd.SetupBodyPart(shoulderR);
         jd.SetupBodyPart(armR);
         jd.SetupBodyPart(forearmR);
         jd.SetupBodyPart(handR);
@@ -329,9 +339,12 @@ public class DeepMimicAgent : Agent
         int i = -1;
         var bp = jd.bodyPartsDict;
 
-        bp[chest].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
+        // ----------------- Torso (3 DoF each) -----------------
         bp[spine].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
+        bp[spine1].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
+        bp[spine2].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
 
+        // ----------------- Legs -----------------
         bp[thighL].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
         bp[thighR].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
 
@@ -341,19 +354,26 @@ public class DeepMimicAgent : Agent
         bp[footR].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
         bp[footL].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
 
+        // ----------------- Shoulders (2 DoF like upper arms) -----------------
+        bp[shoulderL].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
+        bp[shoulderR].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
+
+        // ----------------- Arms -----------------
         bp[armL].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
         bp[armR].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
 
         bp[forearmL].SetJointTargetRotationLocal(smoothedActions[++i], 0, 0);
         bp[forearmR].SetJointTargetRotationLocal(smoothedActions[++i], 0, 0);
 
+        // ----------------- Head -----------------
         bp[head].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
 
 
-
-        // --- Strength actions ---
-        bp[chest].SetJointStrength(smoothedActions[++i]);
+        // ----------------- Strength actions -----------------
         bp[spine].SetJointStrength(smoothedActions[++i]);
+        bp[spine1].SetJointStrength(smoothedActions[++i]);
+        bp[spine2].SetJointStrength(smoothedActions[++i]);
+
         bp[head].SetJointStrength(smoothedActions[++i]);
 
         bp[thighL].SetJointStrength(smoothedActions[++i]);
@@ -364,8 +384,11 @@ public class DeepMimicAgent : Agent
         bp[shinR].SetJointStrength(smoothedActions[++i]);
         bp[footR].SetJointStrength(smoothedActions[++i]);
 
+        bp[shoulderL].SetJointStrength(smoothedActions[++i]);
         bp[armL].SetJointStrength(smoothedActions[++i]);
         bp[forearmL].SetJointStrength(smoothedActions[++i]);
+
+        bp[shoulderR].SetJointStrength(smoothedActions[++i]);
         bp[armR].SetJointStrength(smoothedActions[++i]);
         bp[forearmR].SetJointStrength(smoothedActions[++i]);
     }

@@ -3,10 +3,10 @@ behaviors:
   DMWalker:
     trainer_type: ppo
     hyperparameters:
-      batch_size: 256
-      buffer_size: 4096
-      learning_rate: 5.0e-05
-      beta: 0.005
+      batch_size: 4096
+      buffer_size: 65536
+      learning_rate: 2.5e-05
+      beta: 0.0025
       epsilon: 0.2
       lambd: 0.95
       num_epoch: 3
@@ -25,7 +25,7 @@ behaviors:
       deterministic: false
     reward_signals:
       extrinsic:
-        gamma: 0.95
+        gamma: 0.99
         strength: 1.0
         network_settings:
           normalize: false
@@ -39,7 +39,7 @@ behaviors:
     keep_checkpoints: 5
     even_checkpoints: false
     max_steps: 60000000
-    time_horizon: 32
+    time_horizon: 128
     summary_freq: 50000
     threaded: false
     self_play: null
@@ -62,11 +62,11 @@ engine_settings:
   time_scale: 20
   target_frame_rate: -1
   capture_frame_rate: 60
-  no_graphics: true
-  no_graphics_monitor: false
+  no_graphics: false
+  no_graphics_monitor: true
 environment_parameters: null
 checkpoint_settings:
-  run_id: Walk
+  run_id: Heading
   initialize_from: null
   load_model: false
   resume: true

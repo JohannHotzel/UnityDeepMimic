@@ -1104,9 +1104,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 29bc61556eb1db845906161899cffb3c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  randomRotate: 0
-  minTurnSpeed: 0
-  maxTurnSpeed: 0
+  randomRotate: 1
+  minTurnSpeed: -20
+  maxTurnSpeed: 20
   directionChangeInterval: 4
 --- !u!114 &9172349207440456372
 MonoBehaviour:
@@ -1137,7 +1137,7 @@ PrefabInstance:
     - target: {fileID: 2134967647825817621, guid: 08dcd14cf4c5562458373883abeadc96, type: 3}
       propertyPath: m_Model
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 5022602860645237092, guid: 2a4860ce6bc86654ba2510558cb4abcf, type: 3}
     - target: {fileID: 2134967647825817621, guid: 08dcd14cf4c5562458373883abeadc96, type: 3}
       propertyPath: m_BrainParameters.m_ActionSpec.m_NumContinuousActions
       value: 39
@@ -1152,7 +1152,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6099840129864349062, guid: 08dcd14cf4c5562458373883abeadc96, type: 3}
       propertyPath: MaxStep
-      value: 150
+      value: 1000
       objectReference: {fileID: 0}
     - target: {fileID: 6099840129864349062, guid: 08dcd14cf4c5562458373883abeadc96, type: 3}
       propertyPath: sensorRig
@@ -1168,7 +1168,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6099840129864349062, guid: 08dcd14cf4c5562458373883abeadc96, type: 3}
       propertyPath: actionSmoothing
-      value: 1
+      value: 0.7
       objectReference: {fileID: 0}
     - target: {fileID: 6099840129864349062, guid: 08dcd14cf4c5562458373883abeadc96, type: 3}
       propertyPath: imitationWeight
@@ -1192,7 +1192,7 @@ PrefabInstance:
       objectReference: {fileID: 2100310699695724267}
     - target: {fileID: 6099840129864349062, guid: 08dcd14cf4c5562458373883abeadc96, type: 3}
       propertyPath: endEffectorExponent
-      value: 2
+      value: 40
       objectReference: {fileID: 0}
     - target: {fileID: 7152738287757420373, guid: 08dcd14cf4c5562458373883abeadc96, type: 3}
       propertyPath: m_LocalPosition.x

@@ -125,15 +125,6 @@ public class DeepMimicAgent : Agent
         jd.SetupBodyPart(forearmR);
         jd.SetupBodyPart(handR);
 
-        /*
-        foreach (var bp in jd.bodyPartsList)
-        {
-            if (bp.joint)
-            {
-                bp.SetJointStrengthConstant(1.0f);
-            }
-        }
-        */
     }
     public override void OnEpisodeBegin()
     {
@@ -227,19 +218,6 @@ public class DeepMimicAgent : Agent
         AddHeadingErrorObservations(sensor);
         AddHipVelocityObservations(sensor);
         AddFootContactObservations(sensor);
-
-
-        /*
-        // Heading and Speed Observation
-        Vector3 headingWorld = GetCurrentHeading();
-        Vector3 headingLocal = hips.InverseTransformDirection(headingWorld);
-        headingLocal.y = 0f;
-        headingLocal.Normalize();
-
-        // Desired Speed and Heading
-        sensor.AddObservation(headingLocal);
-        sensor.AddObservation(desiredSpeed);
-        */
 
     }
     public override void OnActionReceived(ActionBuffers actions)

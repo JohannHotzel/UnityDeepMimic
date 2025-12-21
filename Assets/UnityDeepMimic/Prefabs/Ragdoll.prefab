@@ -123,7 +123,7 @@ ConfigurableJoint:
   m_ZMotion: 0
   m_AngularXMotion: 1
   m_AngularYMotion: 1
-  m_AngularZMotion: 0
+  m_AngularZMotion: 1
   m_LinearLimitSpring:
     spring: 0
     damper: 0
@@ -150,7 +150,7 @@ ConfigurableJoint:
     bounciness: 0
     contactDistance: 0
   m_AngularZLimit:
-    limit: 20
+    limit: 30
     bounciness: 0
     contactDistance: 0
   m_TargetPosition: {x: 0, y: 0, z: 0}
@@ -2333,7 +2333,7 @@ ConfigurableJoint:
   m_ZMotion: 0
   m_AngularXMotion: 1
   m_AngularYMotion: 1
-  m_AngularZMotion: 0
+  m_AngularZMotion: 1
   m_LinearLimitSpring:
     spring: 0
     damper: 0
@@ -2360,7 +2360,7 @@ ConfigurableJoint:
     bounciness: 0
     contactDistance: 0
   m_AngularZLimit:
-    limit: 20
+    limit: 30
     bounciness: 0
     contactDistance: 0
   m_TargetPosition: {x: 0, y: 0, z: 0}
@@ -3282,7 +3282,7 @@ ConfigurableJoint:
   m_ZMotion: 0
   m_AngularXMotion: 1
   m_AngularYMotion: 1
-  m_AngularZMotion: 0
+  m_AngularZMotion: 1
   m_LinearLimitSpring:
     spring: 0
     damper: 0
@@ -3294,7 +3294,7 @@ ConfigurableJoint:
     spring: 0
     damper: 0
   m_LowAngularXLimit:
-    limit: -90
+    limit: -130
     bounciness: 0
     contactDistance: 0
   m_HighAngularXLimit:
@@ -3309,7 +3309,7 @@ ConfigurableJoint:
     bounciness: 0
     contactDistance: 0
   m_AngularZLimit:
-    limit: 0
+    limit: 30
     bounciness: 0
     contactDistance: 0
   m_TargetPosition: {x: 0, y: 0, z: 0}
@@ -5660,7 +5660,7 @@ MonoBehaviour:
     VectorObservationSize: 257
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 49
+      m_NumContinuousActions: 53
       BranchSizes: 01000000
     VectorActionSize: 
     VectorActionDescriptions: []
@@ -5690,7 +5690,7 @@ MonoBehaviour:
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  MaxStep: 1000
+  MaxStep: 150
   hips: {fileID: 5947148526437258225}
   spine: {fileID: 833585475889835807}
   spine1: {fileID: 8962553215051519277}
@@ -5718,8 +5718,8 @@ MonoBehaviour:
   kSpeed: 2.5
   kSide: 2.5
   baseDesiredSpeed: 3
-  imitationWeight: 0.7
-  taskWeight: 0.3
+  imitationWeight: 1
+  taskWeight: 0
   leftHandEndEffector: {fileID: 1303533702310749349}
   rightHandEndEffector: {fileID: 3985329452345787623}
   leftFootEndEffector: {fileID: 5095546758197296838}
@@ -6430,7 +6430,7 @@ ConfigurableJoint:
   m_ZMotion: 0
   m_AngularXMotion: 1
   m_AngularYMotion: 1
-  m_AngularZMotion: 0
+  m_AngularZMotion: 1
   m_LinearLimitSpring:
     spring: 0
     damper: 0
@@ -6442,7 +6442,7 @@ ConfigurableJoint:
     spring: 0
     damper: 0
   m_LowAngularXLimit:
-    limit: -90
+    limit: -130
     bounciness: 0
     contactDistance: 0
   m_HighAngularXLimit:
@@ -6457,7 +6457,7 @@ ConfigurableJoint:
     bounciness: 0
     contactDistance: 0
   m_AngularZLimit:
-    limit: 0
+    limit: 30
     bounciness: 0
     contactDistance: 0
   m_TargetPosition: {x: 0, y: 0, z: 0}

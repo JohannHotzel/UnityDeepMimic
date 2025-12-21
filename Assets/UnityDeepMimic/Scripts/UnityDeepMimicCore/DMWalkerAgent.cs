@@ -345,8 +345,8 @@ public class DeepMimicAgent : Agent
         bp[spine2].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
 
         // ----------------- Legs -----------------
-        bp[thighL].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
-        bp[thighR].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
+        bp[thighL].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
+        bp[thighR].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
 
         bp[shinL].SetJointTargetRotationLocal(smoothedActions[++i], 0, 0);
         bp[shinR].SetJointTargetRotationLocal(smoothedActions[++i], 0, 0);
@@ -359,8 +359,8 @@ public class DeepMimicAgent : Agent
         bp[shoulderR].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
 
         // ----------------- Arms -----------------
-        bp[armL].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
-        bp[armR].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], 0);
+        bp[armL].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
+        bp[armR].SetJointTargetRotationLocal(smoothedActions[++i], smoothedActions[++i], smoothedActions[++i]);
 
         bp[forearmL].SetJointTargetRotationLocal(smoothedActions[++i], 0, 0);
         bp[forearmR].SetJointTargetRotationLocal(smoothedActions[++i], 0, 0);

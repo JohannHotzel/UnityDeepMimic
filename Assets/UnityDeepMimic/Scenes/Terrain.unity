@@ -726,6 +726,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1280283591491311612, guid: 9b2cf1f206b74e84ea634016dbd0862f, type: 3}
+      propertyPath: m_Model
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 2813710953389334894, guid: 9b2cf1f206b74e84ea634016dbd0862f, type: 3}
       propertyPath: m_Name
       value: Env Flat

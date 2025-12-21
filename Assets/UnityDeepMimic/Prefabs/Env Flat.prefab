@@ -786,7 +786,7 @@ PrefabInstance:
     - target: {fileID: 2134967647825817621, guid: 08dcd14cf4c5562458373883abeadc96, type: 3}
       propertyPath: m_Model
       value: 
-      objectReference: {fileID: 5022602860645237092, guid: fc3ca836c51b1b6488a6c7bd77ff0e91, type: 3}
+      objectReference: {fileID: 5022602860645237092, guid: b7d5b1801a6c2e34ea1c15e53a07e0b4, type: 3}
     - target: {fileID: 6099840129864349062, guid: 08dcd14cf4c5562458373883abeadc96, type: 3}
       propertyPath: MaxStep
       value: 1000

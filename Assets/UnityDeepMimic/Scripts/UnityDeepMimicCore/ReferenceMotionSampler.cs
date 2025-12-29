@@ -141,6 +141,7 @@ public class ReferenceMotionSampler : MonoBehaviour
 
         // Shift whole sampler rig so that rootBone sits exactly on agent hips
         Vector3 delta = alignToHips.position - rootBone.position;
+        delta.y = 0f; 
         transform.position += delta;
     }
 

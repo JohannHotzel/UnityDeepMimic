@@ -2,7 +2,7 @@ behaviors:
   DMWalker:
     trainer_type: ppo
     hyperparameters:
-      batch_size: 4096        # Imitation: 256
+      batch_size: 2048        # Imitation: 256
       buffer_size: 65536       # 131072      # Imitation: 4096
       learning_rate: 0.00005 # Imitation: 0.00005   Default: 0.0003
       beta: 0.005            # Default: 0.005   
@@ -22,6 +22,6 @@ behaviors:
         gamma: 0.99          # Imitation:  0.95 Default: 0.995
         strength: 1.0
     keep_checkpoints: 5
-    max_steps: 60000000
-    time_horizon: 64         # Imitation: 32 Default: 64 Heading: 128
+    max_steps: 40000000
+    time_horizon: 128         # Imitation: 32 Default: 64 Heading: 128
     summary_freq: 50000
